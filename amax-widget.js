@@ -1,6 +1,6 @@
 /*
  * amax-widget.js — AMAX Insurance BI Chat Widget
- * Beta-ready version with improved layout and random questions
+ * Improved layout with wider chat area and better aesthetics
  */
 (function() {
     'use strict';
@@ -88,16 +88,16 @@
             position: fixed !important;
             bottom: 10px !important;
             right: 10px !important;
-            width: 600px !important;
-            height: 750px !important;
+            width: 750px !important;
+            height: 800px !important;
             background: white !important;
             border-radius: 20px !important;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2) !important;
             display: none !important;
             overflow: hidden !important;
             z-index: 999998 !important;
             flex-direction: column !important;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif !important;
         }
 
         .amax-chat.open {
@@ -111,13 +111,13 @@
         }
 
         .amax-header {
-            background: #DC143C !important;
+            background: linear-gradient(135deg, #DC143C, #B91C3C) !important;
             color: white !important;
-            padding: 18px 25px !important;
+            padding: 20px 25px !important;
             display: flex !important;
             justify-content: space-between !important;
             align-items: center !important;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1) !important;
         }
 
         .amax-header .logo {
@@ -129,14 +129,15 @@
         .amax-header .logo-icon {
             background: white !important;
             color: #DC143C !important;
-            width: 40px !important;
-            height: 40px !important;
-            border-radius: 10px !important;
+            width: 42px !important;
+            height: 42px !important;
+            border-radius: 12px !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
             font-weight: bold !important;
             font-size: 18px !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
         }
 
         .amax-header .logo-icon img {
@@ -146,68 +147,69 @@
         }
 
         .amax-header h2 {
-            font-size: 20px !important;
+            font-size: 22px !important;
             font-weight: 600 !important;
             margin: 0 !important;
             letter-spacing: 0.5px !important;
         }
 
         .amax-close {
-            background: none !important;
+            background: rgba(255,255,255,0.1) !important;
             border: none !important;
             color: white !important;
-            font-size: 26px !important;
+            font-size: 24px !important;
             cursor: pointer !important;
             padding: 8px !important;
             border-radius: 50% !important;
-            width: 35px !important;
-            height: 35px !important;
+            width: 38px !important;
+            height: 38px !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
-            transition: background 0.2s !important;
+            transition: all 0.2s !important;
         }
 
         .amax-close:hover {
             background: rgba(255,255,255,0.2) !important;
+            transform: scale(1.1) !important;
         }
 
         .amax-main {
             display: flex !important;
-            height: calc(100% - 76px) !important;
+            height: calc(100% - 82px) !important;
         }
 
         .amax-sidebar {
-            width: 200px !important;
-            background: #f8f9fa !important;
+            width: 160px !important;
+            background: linear-gradient(180deg, #f8f9fa, #f1f3f4) !important;
             border-right: 1px solid #e9ecef !important;
-            padding: 20px 15px !important;
+            padding: 15px 10px !important;
             overflow-y: auto !important;
-            font-size: 13px !important;
+            font-size: 12px !important;
         }
 
         .amax-sidebar h3 {
-            margin: 0 0 12px 0 !important;
-            font-size: 12px !important;
+            margin: 0 0 10px 0 !important;
+            font-size: 10px !important;
             font-weight: 700 !important;
             color: #666 !important;
             text-transform: uppercase !important;
-            letter-spacing: 0.8px !important;
+            letter-spacing: 1px !important;
         }
 
         .amax-sidebar .quick-btn {
             display: block !important;
             width: 100% !important;
-            padding: 10px 8px !important;
-            margin: 6px 0 !important;
+            padding: 8px 6px !important;
+            margin: 4px 0 !important;
             background: white !important;
             border: 1px solid #e9ecef !important;
-            border-radius: 8px !important;
-            font-size: 11px !important;
+            border-radius: 6px !important;
+            font-size: 10px !important;
             color: #495057 !important;
             cursor: pointer !important;
             transition: all 0.2s !important;
-            line-height: 1.3 !important;
+            line-height: 1.2 !important;
             text-align: left !important;
             font-weight: 500 !important;
         }
@@ -220,27 +222,28 @@
         }
 
         .random-btn {
-            background: #28a745 !important;
+            background: linear-gradient(135deg, #28a745, #20c997) !important;
             color: white !important;
             border: none !important;
-            padding: 8px 12px !important;
+            padding: 8px 8px !important;
             border-radius: 6px !important;
-            font-size: 10px !important;
+            font-size: 9px !important;
             cursor: pointer !important;
             margin: 8px 0 !important;
             transition: all 0.2s !important;
             font-weight: 600 !important;
             text-transform: uppercase !important;
             letter-spacing: 0.5px !important;
+            width: 100% !important;
         }
 
         .random-btn:hover {
-            background: #218838 !important;
+            background: linear-gradient(135deg, #218838, #1e7e34) !important;
             transform: translateY(-1px) !important;
         }
 
         .disclaimer {
-            font-size: 9px !important;
+            font-size: 8px !important;
             color: #999 !important;
             font-style: italic !important;
             margin-top: 5px !important;
@@ -248,24 +251,24 @@
         }
 
         .history-section {
-            margin-top: 25px !important;
+            margin-top: 20px !important;
         }
 
         .history-container {
-            max-height: 180px !important;
+            max-height: 150px !important;
             overflow-y: auto !important;
         }
 
         .history-item {
-            padding: 8px 6px !important;
-            margin: 4px 0 !important;
+            padding: 6px 4px !important;
+            margin: 3px 0 !important;
             background: white !important;
-            border-radius: 6px !important;
-            font-size: 10px !important;
+            border-radius: 4px !important;
+            font-size: 9px !important;
             color: #666 !important;
             cursor: pointer !important;
             border: 1px solid #e9ecef !important;
-            line-height: 1.3 !important;
+            line-height: 1.2 !important;
             font-weight: 500 !important;
         }
 
@@ -277,42 +280,45 @@
             flex: 1 !important;
             display: flex !important;
             flex-direction: column !important;
+            width: 590px !important;
         }
 
         .amax-messages {
             flex: 1 !important;
-            padding: 20px !important;
+            padding: 25px !important;
             overflow-y: auto !important;
-            font-size: 15px !important;
-            line-height: 1.5 !important;
-            background: #fafafa !important;
+            font-size: 16px !important;
+            line-height: 1.6 !important;
+            background: #fafbfc !important;
         }
 
         .amax-msg {
-            margin: 12px 0 !important;
-            padding: 14px 18px !important;
-            border-radius: 18px !important;
-            max-width: 85% !important;
+            margin: 15px 0 !important;
+            padding: 16px 20px !important;
+            border-radius: 20px !important;
+            max-width: 80% !important;
             word-wrap: break-word !important;
-            line-height: 1.5 !important;
-            font-size: 15px !important;
+            line-height: 1.6 !important;
+            font-size: 16px !important;
             font-weight: 400 !important;
         }
 
         .amax-msg.user {
-            background: #DC143C !important;
+            background: linear-gradient(135deg, #DC143C, #B91C3C) !important;
             color: white !important;
             margin-left: auto !important;
-            border-bottom-right-radius: 4px !important;
+            border-bottom-right-radius: 6px !important;
             font-weight: 500 !important;
+            box-shadow: 0 2px 10px rgba(220, 20, 60, 0.2) !important;
         }
 
         .amax-msg.bot {
             background: white !important;
             color: #333 !important;
             margin-right: auto !important;
-            border-bottom-left-radius: 4px !important;
+            border-bottom-left-radius: 6px !important;
             border: 1px solid #e9ecef !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05) !important;
         }
 
         .amax-msg.error {
@@ -322,90 +328,96 @@
         }
 
         .chart-container {
-            margin: 15px 0 !important;
-            padding: 15px !important;
+            margin: 20px 0 !important;
+            padding: 20px !important;
             background: white !important;
-            border-radius: 10px !important;
+            border-radius: 12px !important;
             border: 1px solid #e9ecef !important;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
         }
 
         .chart-error {
             color: #DC143C !important;
-            font-weight: bold !important;
+            font-weight: 600 !important;
             padding: 15px !important;
             background: #fff5f5 !important;
-            border: 1px solid #fecaca !important;
-            border-radius: 8px !important;
-            margin: 10px 0 !important;
+            border: 2px solid #fecaca !important;
+            border-radius: 10px !important;
+            margin: 15px 0 !important;
+            text-align: center !important;
         }
 
         .amax-input-area {
-            padding: 18px !important;
+            padding: 20px !important;
             border-top: 1px solid #e9ecef !important;
             display: flex !important;
-            gap: 12px !important;
+            gap: 15px !important;
             align-items: center !important;
             background: white !important;
         }
 
         .amax-input {
             flex: 1 !important;
-            padding: 12px 18px !important;
-            border: 1px solid #ddd !important;
+            padding: 14px 20px !important;
+            border: 2px solid #e9ecef !important;
             border-radius: 25px !important;
-            font-size: 15px !important;
+            font-size: 16px !important;
             outline: none !important;
             font-family: inherit !important;
-            background: white !important;
+            background: #fafbfc !important;
+            transition: all 0.2s !important;
         }
 
         .amax-input:focus {
             border-color: #DC143C !important;
-            box-shadow: 0 0 0 2px rgba(220, 20, 60, 0.1) !important;
+            box-shadow: 0 0 0 3px rgba(220, 20, 60, 0.1) !important;
+            background: white !important;
         }
 
         .amax-send {
-            background: #DC143C !important;
+            background: linear-gradient(135deg, #DC143C, #B91C3C) !important;
             border: none !important;
             color: white !important;
-            width: 45px !important;
-            height: 45px !important;
+            width: 50px !important;
+            height: 50px !important;
             border-radius: 50% !important;
             cursor: pointer !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
-            font-size: 18px !important;
-            transition: background 0.2s !important;
+            font-size: 20px !important;
+            transition: all 0.2s !important;
             font-weight: bold !important;
+            box-shadow: 0 4px 12px rgba(220, 20, 60, 0.3) !important;
         }
 
         .amax-send:hover {
-            background: #b91c3c !important;
+            background: linear-gradient(135deg, #B91C3C, #991b3b) !important;
+            transform: scale(1.05) !important;
         }
 
         .amax-send:disabled {
             background: #ccc !important;
             cursor: not-allowed !important;
+            transform: none !important;
         }
 
         .amax-typing {
-            padding: 14px 18px !important;
+            padding: 16px 20px !important;
             color: #666 !important;
             font-style: italic !important;
-            font-size: 14px !important;
+            font-size: 15px !important;
             display: none !important;
             background: #f8f9fa !important;
-            margin: 0 20px !important;
-            border-radius: 10px !important;
+            margin: 0 25px !important;
+            border-radius: 12px !important;
         }
 
         .amax-typing.show {
             display: block !important;
         }
 
-        @media (max-width: 650px) {
+        @media (max-width: 800px) {
             .amax-chat {
                 width: 100vw !important;
                 height: 100vh !important;
@@ -414,7 +426,10 @@
                 border-radius: 0 !important;
             }
             .amax-sidebar { 
-                width: 160px !important; 
+                width: 140px !important; 
+            }
+            .amax-chat-area {
+                width: calc(100vw - 140px) !important;
             }
         }
     `;
@@ -425,25 +440,25 @@
     let processing = false;
 
     const quickQuestions = [
-        "What was the total premium for July 2024?",
-        "Show monthly premium trends",
-        "Which location had highest premiums?",
-        "Generate a revenue report",
-        "Premium by state breakdown"
+        "Total premium July 2024?",
+        "Monthly trends chart",
+        "Top location by premium?",
+        "Revenue report Q3",
+        "State breakdown"
     ];
 
-    // Random questions from database schema
+    // Improved specific random questions
     const randomQuestions = [
-        "Show me premium trends by agent performance",
-        "Which products have the highest claim ratios?",
-        "Compare revenue across different policy types",
-        "What are the top performing regions this quarter?",
-        "Show policy renewal rates by customer segment",
-        "Analyze premium volume by distribution channel",
-        "Which age groups generate most premium?",
-        "Compare monthly vs annual policy performance",
-        "Show claim frequency by coverage type",
-        "Top 5 agents by policy count and premium"
+        "Show me total premiums for Insurance Pro vs Insurance Pro Alpha last 6 months",
+        "What are the exact policy counts by location for July 2024?",
+        "Compare monthly premium trends between 2023 and 2024",
+        "Which agent wrote the most policies in Q2 2024?",
+        "Show me premium breakdown by policy type for this year",
+        "What's the average premium per policy by location?",
+        "Generate chart showing top 5 locations by total premium",
+        "Compare claim ratios between different product lines",
+        "Show policy renewal rates by customer age group",
+        "What's the monthly growth rate in premium collection?"
     ];
 
     function generateRandomQuestion() {
@@ -451,23 +466,20 @@
         return randomQuestions[randomIndex];
     }
 
-    // Enhanced chart data parsing with better error handling
+    // Enhanced chart data parsing
     function parseChartData(responseText) {
         console.log('🔍 PARSING CHART DATA:', responseText);
         
-        // Check if response contains [CHART] placeholder or chart mentions without data
         if (responseText.includes('[CHART]') || responseText.includes('[CHART:')) {
-            console.log('❌ Found [CHART] placeholder - backend issue');
+            console.log('❌ Found [CHART] placeholder - backend configuration issue');
             return 'placeholder';
         }
         
-        // Try to find the deconstructed chart data
         const lines = responseText.split('\n').map(line => line.trim()).filter(line => line);
-        
-        // Look for chart data starting with $schema
         const schemaIndex = lines.findIndex(line => line.includes('$schema:'));
+        
         if (schemaIndex === -1) {
-            console.log('❌ No $schema found in response');
+            console.log('❌ No $schema found - no chart data in response');
             return null;
         }
         
@@ -541,14 +553,14 @@
         
         try {
             await vegaEmbed(container, spec, {
-                width: 320,
-                height: 220,
-                padding: { left: 50, right: 20, top: 30, bottom: 50 }
+                width: 400,
+                height: 250,
+                padding: { left: 60, right: 30, top: 40, bottom: 60 }
             });
             return container;
         } catch (error) {
             console.error('Chart rendering error:', error);
-            container.innerHTML = '<div class="chart-error">❌ Chart rendering failed</div>';
+            container.innerHTML = '<div class="chart-error">❌ Chart visualization failed</div>';
             return container;
         }
     }
@@ -562,7 +574,6 @@
         const chartSpec = parseChartData(responseText);
         
         if (chartSpec === 'placeholder') {
-            // Backend returned [CHART] placeholder instead of data
             const textDiv = document.createElement('div');
             textDiv.innerHTML = responseText.replace(/\[CHART[^\]]*\]/g, '<div class="chart-error">❌ Chart data not generated by backend. Please check n8n workflow configuration.</div>').replace(/\n/g, '<br>');
             container.appendChild(textDiv);
@@ -580,11 +591,9 @@
             
             const chartContainer = await renderChart(chartSpec);
             container.appendChild(chartContainer);
-            
             return container;
         }
         
-        // Check if response mentions chart but no data found
         if (responseText.toLowerCase().includes('chart') || responseText.toLowerCase().includes('visualization')) {
             const textDiv = document.createElement('div');
             textDiv.innerHTML = responseText.replace(/\n/g, '<br>') + '<div class="chart-error">❌ Chart requested but no data received from backend</div>';
@@ -623,10 +632,10 @@
                 <div class="amax-main">
                     <div class="amax-sidebar">
                         <div class="sidebar-section">
-                            <h3>Quick Questions</h3>
+                            <h3>Quick Q's</h3>
                             <div id="amaxQuickQuestions"></div>
-                            <button class="random-btn" id="randomBtn">🎲 Random Question</button>
-                            <div class="disclaimer">*Questions generated from database schema. Results may vary.</div>
+                            <button class="random-btn" id="randomBtn">🎲 Smart Question</button>
+                            <div class="disclaimer">*AI-generated specific queries</div>
                         </div>
                         <div class="history-section">
                             <h3>History</h3>
@@ -719,7 +728,7 @@
         history.slice(0, 5).forEach(item => {
             const div = document.createElement('div');
             div.className = 'history-item';
-            div.textContent = item.length > 35 ? item.substring(0, 35) + '...' : item;
+            div.textContent = item.length > 25 ? item.substring(0, 25) + '...' : item;
             div.onclick = () => sendMessage(item);
             container.appendChild(div);
         });

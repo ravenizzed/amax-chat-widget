@@ -1,6 +1,6 @@
 /*
  * amax-widget.js — AMAX Insurance BI Chat Widget
- * Enlarged version with better readability
+ * Beta-ready version with improved layout and random questions
  */
 (function() {
     'use strict';
@@ -45,6 +45,13 @@
     }
 
     const styles = `
+        body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: transparent !important;
+            overflow: hidden !important;
+        }
+
         .amax-widget-btn {
             position: fixed !important;
             bottom: 20px !important;
@@ -79,10 +86,10 @@
 
         .amax-chat {
             position: fixed !important;
-            bottom: 90px !important;
-            right: 20px !important;
-            width: 550px !important;
-            height: 700px !important;
+            bottom: 10px !important;
+            right: 10px !important;
+            width: 600px !important;
+            height: 750px !important;
             background: white !important;
             border-radius: 20px !important;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
@@ -171,7 +178,7 @@
         }
 
         .amax-sidebar {
-            width: 180px !important;
+            width: 200px !important;
             background: #f8f9fa !important;
             border-right: 1px solid #e9ecef !important;
             padding: 20px 15px !important;
@@ -212,12 +219,40 @@
             transform: translateY(-1px) !important;
         }
 
+        .random-btn {
+            background: #28a745 !important;
+            color: white !important;
+            border: none !important;
+            padding: 8px 12px !important;
+            border-radius: 6px !important;
+            font-size: 10px !important;
+            cursor: pointer !important;
+            margin: 8px 0 !important;
+            transition: all 0.2s !important;
+            font-weight: 600 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
+        }
+
+        .random-btn:hover {
+            background: #218838 !important;
+            transform: translateY(-1px) !important;
+        }
+
+        .disclaimer {
+            font-size: 9px !important;
+            color: #999 !important;
+            font-style: italic !important;
+            margin-top: 5px !important;
+            line-height: 1.2 !important;
+        }
+
         .history-section {
             margin-top: 25px !important;
         }
 
         .history-container {
-            max-height: 220px !important;
+            max-height: 180px !important;
             overflow-y: auto !important;
         }
 
@@ -250,6 +285,7 @@
             overflow-y: auto !important;
             font-size: 15px !important;
             line-height: 1.5 !important;
+            background: #fafafa !important;
         }
 
         .amax-msg {
@@ -272,10 +308,11 @@
         }
 
         .amax-msg.bot {
-            background: #f1f3f4 !important;
+            background: white !important;
             color: #333 !important;
             margin-right: auto !important;
             border-bottom-left-radius: 4px !important;
+            border: 1px solid #e9ecef !important;
         }
 
         .amax-msg.error {
@@ -293,13 +330,23 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
         }
 
+        .chart-error {
+            color: #DC143C !important;
+            font-weight: bold !important;
+            padding: 15px !important;
+            background: #fff5f5 !important;
+            border: 1px solid #fecaca !important;
+            border-radius: 8px !important;
+            margin: 10px 0 !important;
+        }
+
         .amax-input-area {
             padding: 18px !important;
             border-top: 1px solid #e9ecef !important;
             display: flex !important;
             gap: 12px !important;
             align-items: center !important;
-            background: #fafafa !important;
+            background: white !important;
         }
 
         .amax-input {
@@ -358,7 +405,7 @@
             display: block !important;
         }
 
-        @media (max-width: 600px) {
+        @media (max-width: 650px) {
             .amax-chat {
                 width: 100vw !important;
                 height: 100vh !important;
@@ -367,7 +414,7 @@
                 border-radius: 0 !important;
             }
             .amax-sidebar { 
-                width: 140px !important; 
+                width: 160px !important; 
             }
         }
     `;
@@ -385,14 +432,33 @@
         "Premium by state breakdown"
     ];
 
-    // Enhanced chart data parsing - handle both formats
+    // Random questions from database schema
+    const randomQuestions = [
+        "Show me premium trends by agent performance",
+        "Which products have the highest claim ratios?",
+        "Compare revenue across different policy types",
+        "What are the top performing regions this quarter?",
+        "Show policy renewal rates by customer segment",
+        "Analyze premium volume by distribution channel",
+        "Which age groups generate most premium?",
+        "Compare monthly vs annual policy performance",
+        "Show claim frequency by coverage type",
+        "Top 5 agents by policy count and premium"
+    ];
+
+    function generateRandomQuestion() {
+        const randomIndex = Math.floor(Math.random() * randomQuestions.length);
+        return randomQuestions[randomIndex];
+    }
+
+    // Enhanced chart data parsing with better error handling
     function parseChartData(responseText) {
         console.log('🔍 PARSING CHART DATA:', responseText);
         
-        // Check if response contains [CHART] placeholder
-        if (responseText.includes('[CHART]')) {
-            console.log('❌ Found [CHART] placeholder - no actual chart data');
-            return null;
+        // Check if response contains [CHART] placeholder or chart mentions without data
+        if (responseText.includes('[CHART]') || responseText.includes('[CHART:')) {
+            console.log('❌ Found [CHART] placeholder - backend issue');
+            return 'placeholder';
         }
         
         // Try to find the deconstructed chart data
@@ -406,7 +472,6 @@
         }
         
         try {
-            // Build the JSON object from the deconstructed format
             const chartObj = {};
             
             for (let i = schemaIndex; i < lines.length; i++) {
@@ -425,7 +490,6 @@
                 } else if (line === 'values') {
                     // Skip
                 } else if (line.match(/^\d+$/)) {
-                    // This is a data index, next lines are data
                     const dataObj = {};
                     for (let j = i + 1; j < Math.min(i + 10, lines.length); j++) {
                         const dataLine = lines[j];
@@ -445,7 +509,6 @@
                 }
             }
             
-            // Set encoding based on detected data fields
             if (chartObj.data && chartObj.data.values.length > 0) {
                 const firstRow = chartObj.data.values[0];
                 const fields = Object.keys(firstRow);
@@ -478,14 +541,14 @@
         
         try {
             await vegaEmbed(container, spec, {
-                width: 280,
-                height: 200,
+                width: 320,
+                height: 220,
                 padding: { left: 50, right: 20, top: 30, bottom: 50 }
             });
             return container;
         } catch (error) {
             console.error('Chart rendering error:', error);
-            container.innerHTML = '<div style="color: #DC143C; font-weight: bold;">❌ Chart rendering failed</div>';
+            container.innerHTML = '<div class="chart-error">❌ Chart rendering failed</div>';
             return container;
         }
     }
@@ -496,11 +559,17 @@
         
         console.log('🔄 PROCESSING RESPONSE:', responseText);
         
-        // Try to parse chart data from the response
         const chartSpec = parseChartData(responseText);
         
+        if (chartSpec === 'placeholder') {
+            // Backend returned [CHART] placeholder instead of data
+            const textDiv = document.createElement('div');
+            textDiv.innerHTML = responseText.replace(/\[CHART[^\]]*\]/g, '<div class="chart-error">❌ Chart data not generated by backend. Please check n8n workflow configuration.</div>').replace(/\n/g, '<br>');
+            container.appendChild(textDiv);
+            return container;
+        }
+        
         if (chartSpec && chartSpec.data && chartSpec.data.values.length > 0) {
-            // Remove chart data from text response
             const textWithoutChart = responseText.replace(/\$schema:[\s\S]*?(?=\n\n|\n[A-Z]|$)/g, '').trim();
             
             if (textWithoutChart) {
@@ -516,14 +585,13 @@
         }
         
         // Check if response mentions chart but no data found
-        if (responseText.includes('[CHART]') || responseText.toLowerCase().includes('chart') || responseText.toLowerCase().includes('visualization')) {
+        if (responseText.toLowerCase().includes('chart') || responseText.toLowerCase().includes('visualization')) {
             const textDiv = document.createElement('div');
-            textDiv.innerHTML = responseText.replace(/\[CHART\]/g, '<div style="color: #DC143C; font-weight: bold; padding: 10px; background: #fff5f5; border: 1px solid #fecaca; border-radius: 6px;">❌ Chart data not received from backend</div>').replace(/\n/g, '<br>');
+            textDiv.innerHTML = responseText.replace(/\n/g, '<br>') + '<div class="chart-error">❌ Chart requested but no data received from backend</div>';
             container.appendChild(textDiv);
             return container;
         }
         
-        // No chart found, return text only
         container.innerHTML = responseText.replace(/\n/g, '<br>');
         return container;
     }
@@ -557,6 +625,8 @@
                         <div class="sidebar-section">
                             <h3>Quick Questions</h3>
                             <div id="amaxQuickQuestions"></div>
+                            <button class="random-btn" id="randomBtn">🎲 Random Question</button>
+                            <div class="disclaimer">*Questions generated from database schema. Results may vary.</div>
                         </div>
                         <div class="history-section">
                             <h3>History</h3>
@@ -587,6 +657,7 @@
         const closeBtn = document.getElementById('amaxClose');
         const input = document.getElementById('amaxInput');
         const sendBtn = document.getElementById('amaxSend');
+        const randomBtn = document.getElementById('randomBtn');
 
         widgetBtn.addEventListener('click', () => {
             chat.classList.toggle('open');
@@ -609,6 +680,11 @@
             if (!processing) {
                 sendMessage();
             }
+        });
+
+        randomBtn.addEventListener('click', () => {
+            const randomQuestion = generateRandomQuestion();
+            sendMessage(randomQuestion);
         });
 
         setupQuickQuestions();
@@ -643,7 +719,7 @@
         history.slice(0, 5).forEach(item => {
             const div = document.createElement('div');
             div.className = 'history-item';
-            div.textContent = item.length > 30 ? item.substring(0, 30) + '...' : item;
+            div.textContent = item.length > 35 ? item.substring(0, 35) + '...' : item;
             div.onclick = () => sendMessage(item);
             container.appendChild(div);
         });
@@ -713,6 +789,7 @@
             }
 
             const data = await response.json();
+            console.log('🔍 RAW BACKEND RESPONSE:', data);
             const content = await processResponse(data);
             addMessage(content, false);
 

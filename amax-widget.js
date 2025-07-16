@@ -1,31 +1,50 @@
 /*
- * AMAX Insurance BI Chat Widget v3.0
- * Uses Vercel serverless proxy - HTTPS compatible
+ * amax-widget.js — AMAX Insurance BI Chat Widget
+ * Clean iframe-ready version with fixed chart parsing
  */
-
 (function() {
     'use strict';
 
-    // Configuration
     const CONFIG = {
-        webhookUrl: window.location.origin + '/api/webhook', // Uses Vercel proxy
-        logoUrl: './assets/amax-insurance-logo.jpg',
+        webhookUrl: '/api/webhook', // Vercel proxy
+        logoUrl: 'https://raw.githubusercontent.com/ravenizzed/amax-chat-widget/main/assets/amax-insurance-logo.jpg',
         rateLimit: 2000,
-        timeout: 30000,
-        maxHistory: 10
+        timeout: 30000
     };
 
-    // Sample questions
-    const QUESTIONS = [
-        "What was the total premium last quarter?",
-        "Show me new business count by month for this year",
-        "Who are the top 5 agents by premium?",
-        "Show total payments by payment method",
-        "What is the policy renewal rate?",
-        "Show me claims by policy type"
-    ];
+    // Vega-Lite CDN loading
+    let vegaEmbed = null;
+    
+    async function loadVegaLite() {
+        if (window.vegaEmbed) {
+            vegaEmbed = window.vegaEmbed;
+            return;
+        }
+        
+        return new Promise((resolve, reject) => {
+            const script1 = document.createElement('script');
+            script1.src = 'https://cdn.jsdelivr.net/npm/vega@5';
+            script1.onload = () => {
+                const script2 = document.createElement('script');
+                script2.src = 'https://cdn.jsdelivr.net/npm/vega-lite@5';
+                script2.onload = () => {
+                    const script3 = document.createElement('script');
+                    script3.src = 'https://cdn.jsdelivr.net/npm/vega-embed@6';
+                    script3.onload = () => {
+                        vegaEmbed = window.vegaEmbed;
+                        resolve();
+                    };
+                    script3.onerror = reject;
+                    document.head.appendChild(script3);
+                };
+                script2.onerror = reject;
+                document.head.appendChild(script2);
+            };
+            script1.onerror = reject;
+            document.head.appendChild(script1);
+        });
+    }
 
-    // CSS Styles - Clean Design
     const styles = `
         .amax-widget-btn {
             position: fixed !important;
@@ -34,59 +53,38 @@
             width: 60px !important;
             height: 60px !important;
             background: #DC143C !important;
+            border: none !important;
             border-radius: 50% !important;
             cursor: pointer !important;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
-            transition: all 0.3s ease !important;
+            box-shadow: 0 4px 20px rgba(220, 20, 60, 0.3) !important;
             z-index: 999999 !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
-            border: none !important;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-            overflow: hidden !important;
+            transition: all 0.3s ease !important;
         }
 
         .amax-widget-btn:hover {
             transform: scale(1.1) !important;
-            box-shadow: 0 15px 50px rgba(220,20,60,0.4) !important;
-        }
-
-        .amax-widget-btn.has-logo {
-            background: transparent !important;
-            padding: 0 !important;
+            box-shadow: 0 6px 30px rgba(220, 20, 60, 0.4) !important;
         }
 
         .amax-widget-btn img {
-            width: 60px !important;
-            height: 60px !important;
-            border-radius: 50% !important;
-            object-fit: cover !important;
-            display: none !important;
-        }
-
-        .amax-widget-btn img.loaded {
-            display: block !important;
-        }
-
-        .amax-widget-btn .fallback {
-            color: white !important;
-            font-size: 24px !important;
-            font-weight: bold !important;
-            display: block !important;
-        }
-
-        .amax-widget-btn.has-logo .fallback {
-            display: none !important;
+            width: 32px !important;
+            height: 32px !important;
+            object-fit: contain !important;
+            border-radius: 6px !important;
+            background: white !important;
+            padding: 2px !important;
         }
 
         .amax-chat {
             position: fixed !important;
             bottom: 90px !important;
             right: 20px !important;
-            width: 900px !important;
+            width: 400px !important;
             height: 600px !important;
-            background: #ffffff !important;
+            background: white !important;
             border-radius: 20px !important;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
             display: none !important;
@@ -102,8 +100,8 @@
         }
 
         @keyframes amaxSlideIn {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: translateY(30px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         .amax-header {
@@ -113,21 +111,32 @@
             display: flex !important;
             justify-content: space-between !important;
             align-items: center !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important;
         }
 
-        .amax-header .logo-section {
+        .amax-header .logo {
             display: flex !important;
             align-items: center !important;
-            gap: 10px !important;
+            gap: 8px !important;
         }
 
-        .amax-header .logo-section img {
-            width: 30px !important;
-            height: 30px !important;
-            object-fit: cover !important;
+        .amax-header .logo-icon {
             background: white !important;
-            padding: 4px !important;
-            border-radius: 6px !important;
+            color: #DC143C !important;
+            width: 35px !important;
+            height: 35px !important;
+            border-radius: 8px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-weight: bold !important;
+            font-size: 18px !important;
+        }
+
+        .amax-header .logo-icon img {
+            width: 25px !important;
+            height: 25px !important;
+            object-fit: contain !important;
         }
 
         .amax-header h2 {
@@ -143,9 +152,12 @@
             font-size: 24px !important;
             cursor: pointer !important;
             padding: 5px !important;
+            border-radius: 50% !important;
             width: 30px !important;
             height: 30px !important;
-            border-radius: 50% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
             transition: background 0.2s !important;
         }
 
@@ -155,74 +167,71 @@
 
         .amax-main {
             display: flex !important;
-            flex: 1 !important;
-            overflow: hidden !important;
+            height: calc(100% - 70px) !important;
         }
 
         .amax-sidebar {
-            width: 280px !important;
+            width: 140px !important;
             background: #f8f9fa !important;
-            border-right: 1px solid #e0e0e0 !important;
-            padding: 20px !important;
-            display: flex !important;
-            flex-direction: column !important;
+            border-right: 1px solid #e9ecef !important;
+            padding: 15px 10px !important;
+            overflow-y: auto !important;
+            font-size: 12px !important;
         }
 
         .amax-sidebar h3 {
-            font-size: 12px !important;
+            margin: 0 0 10px 0 !important;
+            font-size: 11px !important;
             font-weight: 600 !important;
             color: #666 !important;
-            margin-bottom: 12px !important;
             text-transform: uppercase !important;
             letter-spacing: 0.5px !important;
         }
 
-        .amax-quick-question {
+        .amax-sidebar .quick-btn {
             display: block !important;
             width: 100% !important;
-            text-align: left !important;
-            padding: 10px 14px !important;
-            margin-bottom: 8px !important;
+            padding: 8px 6px !important;
+            margin: 4px 0 !important;
             background: white !important;
-            border: 1px solid #ddd !important;
-            border-radius: 8px !important;
-            font-size: 12px !important;
-            color: #333 !important;
+            border: 1px solid #e9ecef !important;
+            border-radius: 6px !important;
+            font-size: 10px !important;
+            color: #495057 !important;
             cursor: pointer !important;
             transition: all 0.2s !important;
-            line-height: 1.4 !important;
+            line-height: 1.2 !important;
         }
 
-        .amax-quick-question:hover {
+        .amax-sidebar .quick-btn:hover {
             background: #DC143C !important;
             color: white !important;
             border-color: #DC143C !important;
-            transform: translateX(3px) !important;
         }
 
-        .amax-history-section {
-            flex: 1 !important;
+        .history-section {
             margin-top: 20px !important;
+        }
+
+        .history-container {
+            max-height: 200px !important;
             overflow-y: auto !important;
         }
 
-        .amax-history-item {
-            padding: 8px 12px !important;
-            margin-bottom: 6px !important;
+        .history-item {
+            padding: 6px 4px !important;
+            margin: 3px 0 !important;
             background: white !important;
-            border-radius: 6px !important;
-            font-size: 11px !important;
+            border-radius: 4px !important;
+            font-size: 9px !important;
             color: #666 !important;
             cursor: pointer !important;
-            transition: all 0.2s !important;
-            white-space: nowrap !important;
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
+            border: 1px solid #e9ecef !important;
+            line-height: 1.2 !important;
         }
 
-        .amax-history-item:hover {
-            background: #DC143C !important;
-            color: white !important;
+        .history-item:hover {
+            background: #f0f0f0 !important;
         }
 
         .amax-chat-area {
@@ -233,98 +242,64 @@
 
         .amax-messages {
             flex: 1 !important;
-            padding: 20px !important;
+            padding: 15px !important;
             overflow-y: auto !important;
-            display: flex !important;
-            flex-direction: column !important;
-            gap: 15px !important;
+            font-size: 14px !important;
         }
 
         .amax-msg {
-            max-width: 75% !important;
-            padding: 12px 16px !important;
-            border-radius: 12px !important;
-            font-size: 14px !important;
+            margin: 10px 0 !important;
+            padding: 12px 15px !important;
+            border-radius: 18px !important;
+            max-width: 85% !important;
+            word-wrap: break-word !important;
             line-height: 1.4 !important;
-            animation: amaxMsgFade 0.3s ease !important;
         }
 
-        @keyframes amaxMsgFade {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .amax-msg.amax-user {
+        .amax-msg.user {
             background: #DC143C !important;
             color: white !important;
-            align-self: flex-end !important;
+            margin-left: auto !important;
             border-bottom-right-radius: 4px !important;
         }
 
-        .amax-msg.amax-bot {
-            background: #f1f1f1 !important;
+        .amax-msg.bot {
+            background: #f1f3f4 !important;
             color: #333 !important;
-            align-self: flex-start !important;
+            margin-right: auto !important;
             border-bottom-left-radius: 4px !important;
         }
 
-        .amax-msg.amax-error {
+        .amax-msg.error {
             background: #fee !important;
-            color: #d00 !important;
+            color: #c33 !important;
             border: 1px solid #fcc !important;
         }
 
-        .amax-typing {
-            display: none !important;
-            align-self: flex-start !important;
-            padding: 12px 16px !important;
-            background: #f1f1f1 !important;
-            border-radius: 12px !important;
-            border-bottom-left-radius: 4px !important;
-        }
-
-        .amax-typing.show {
-            display: block !important;
-        }
-
-        .amax-typing-dots {
-            display: flex !important;
-            gap: 4px !important;
-        }
-
-        .amax-typing-dots span {
-            width: 8px !important;
-            height: 8px !important;
-            background: #999 !important;
-            border-radius: 50% !important;
-            animation: amaxTypingDot 1.4s infinite ease-in-out !important;
-        }
-
-        .amax-typing-dots span:nth-child(2) { animation-delay: 0.2s !important; }
-        .amax-typing-dots span:nth-child(3) { animation-delay: 0.4s !important; }
-
-        @keyframes amaxTypingDot {
-            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
-            40% { transform: scale(1); opacity: 1; }
+        .chart-container {
+            margin: 10px 0 !important;
+            padding: 10px !important;
+            background: white !important;
+            border-radius: 8px !important;
+            border: 1px solid #e9ecef !important;
         }
 
         .amax-input-area {
-            padding: 15px 20px !important;
-            border-top: 1px solid #e0e0e0 !important;
+            padding: 15px !important;
+            border-top: 1px solid #e9ecef !important;
             display: flex !important;
-            gap: 10px !important;
+            gap: 8px !important;
             align-items: center !important;
         }
 
         .amax-input {
             flex: 1 !important;
-            padding: 12px 16px !important;
+            padding: 10px 15px !important;
             border: 1px solid #ddd !important;
             border-radius: 20px !important;
             font-size: 14px !important;
             outline: none !important;
             font-family: inherit !important;
-            transition: border-color 0.2s !important;
         }
 
         .amax-input:focus {
@@ -332,31 +307,42 @@
         }
 
         .amax-send {
-            padding: 12px 20px !important;
             background: #DC143C !important;
-            color: white !important;
             border: none !important;
-            border-radius: 20px !important;
-            font-size: 14px !important;
-            font-weight: 600 !important;
+            color: white !important;
+            width: 40px !important;
+            height: 40px !important;
+            border-radius: 50% !important;
             cursor: pointer !important;
-            font-family: inherit !important;
-            transition: all 0.2s !important;
-            white-space: nowrap !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 16px !important;
+            transition: background 0.2s !important;
         }
 
-        .amax-send:hover:not(:disabled) {
+        .amax-send:hover {
             background: #b91c3c !important;
-            transform: scale(1.02) !important;
         }
 
         .amax-send:disabled {
             background: #ccc !important;
             cursor: not-allowed !important;
-            transform: none !important;
         }
 
-        @media (max-width: 950px) {
+        .amax-typing {
+            padding: 12px 15px !important;
+            color: #666 !important;
+            font-style: italic !important;
+            font-size: 14px !important;
+            display: none !important;
+        }
+
+        .amax-typing.show {
+            display: block !important;
+        }
+
+        @media (max-width: 480px) {
             .amax-chat {
                 width: 100vw !important;
                 height: 100vh !important;
@@ -364,7 +350,9 @@
                 right: 0 !important;
                 border-radius: 0 !important;
             }
-            .amax-sidebar { display: none !important; }
+            .amax-sidebar { 
+                width: 120px !important; 
+            }
         }
     `;
 
@@ -372,6 +360,144 @@
     let history = [];
     let lastTime = 0;
     let processing = false;
+
+    const quickQuestions = [
+        "What was the total premium for July 2024?",
+        "Show monthly premium trends",
+        "Which location had highest premiums?",
+        "Generate a revenue report",
+        "Premium by state breakdown"
+    ];
+
+    // FIXED: Parse non-JSON chart format
+    function parseChartData(responseText) {
+        console.log('Parsing chart data from:', responseText);
+        
+        // Try to find the deconstructed chart data
+        const lines = responseText.split('\n').map(line => line.trim()).filter(line => line);
+        
+        // Look for chart data starting with $schema
+        const schemaIndex = lines.findIndex(line => line.includes('$schema:'));
+        if (schemaIndex === -1) return null;
+        
+        try {
+            // Build the JSON object from the deconstructed format
+            const chartObj = {};
+            
+            for (let i = schemaIndex; i < lines.length; i++) {
+                const line = lines[i];
+                
+                if (line.includes('$schema:')) {
+                    chartObj['$schema'] = line.split('$schema:')[1];
+                } else if (line === 'config') {
+                    // Start building config object
+                    chartObj.config = {};
+                } else if (line === 'mark') {
+                    chartObj.mark = 'bar'; // Default mark type
+                } else if (line.includes('title:')) {
+                    chartObj.title = line.split('title:')[1];
+                } else if (line === 'data') {
+                    // Start building data object
+                    chartObj.data = { values: [] };
+                } else if (line === 'values') {
+                    // Skip - data.values already created
+                } else if (line.match(/^\d+$/)) {
+                    // This is a data index, next lines are data
+                    const dataObj = {};
+                    // Look ahead for the data fields
+                    for (let j = i + 1; j < Math.min(i + 10, lines.length); j++) {
+                        const dataLine = lines[j];
+                        if (dataLine.includes(':') && !dataLine.match(/^\d+$/)) {
+                            const [key, value] = dataLine.split(':');
+                            if (key && value) {
+                                // Convert numeric values
+                                const numValue = parseFloat(value);
+                                dataObj[key] = isNaN(numValue) ? value : numValue;
+                            }
+                        } else if (dataLine.match(/^\d+$/)) {
+                            break; // Next data object
+                        }
+                    }
+                    if (Object.keys(dataObj).length > 0) {
+                        chartObj.data.values.push(dataObj);
+                    }
+                }
+            }
+            
+            // Set encoding based on detected data fields
+            if (chartObj.data && chartObj.data.values.length > 0) {
+                const firstRow = chartObj.data.values[0];
+                const fields = Object.keys(firstRow);
+                
+                chartObj.encoding = {
+                    x: { field: fields[0] || 'x', type: 'ordinal' },
+                    y: { field: fields[fields.length - 1] || 'y', type: 'quantitative' }
+                };
+                
+                chartObj.mark = { type: 'bar', color: '#DC143C' };
+            }
+            
+            console.log('Parsed chart object:', chartObj);
+            return chartObj;
+            
+        } catch (e) {
+            console.error('Chart parsing error:', e);
+            return null;
+        }
+    }
+
+    async function renderChart(spec) {
+        if (!vegaEmbed) {
+            console.error('Vega-Lite not loaded');
+            return document.createTextNode('[Chart loading failed]');
+        }
+
+        const container = document.createElement('div');
+        container.className = 'chart-container';
+        
+        try {
+            await vegaEmbed(container, spec, {
+                width: 200,
+                height: 150,
+                padding: { left: 40, right: 10, top: 20, bottom: 40 }
+            });
+            return container;
+        } catch (error) {
+            console.error('Chart rendering error:', error);
+            container.textContent = '[Chart error]';
+            return container;
+        }
+    }
+
+    async function processResponse(data) {
+        const container = document.createElement('div');
+        const responseText = typeof data.response === 'string' ? data.response : JSON.stringify(data.response, null, 2);
+        
+        console.log('Processing response:', responseText);
+        
+        // Try to parse chart data from the response
+        const chartSpec = parseChartData(responseText);
+        
+        if (chartSpec && chartSpec.data && chartSpec.data.values.length > 0) {
+            // Remove chart data from text response
+            const textWithoutChart = responseText.replace(/\$schema:[\s\S]*?(?=\n\n|\n[A-Z]|$)/g, '').trim();
+            
+            if (textWithoutChart) {
+                const textDiv = document.createElement('div');
+                textDiv.innerHTML = textWithoutChart.replace(/\n/g, '<br>');
+                container.appendChild(textDiv);
+            }
+            
+            const chartContainer = await renderChart(chartSpec);
+            container.appendChild(chartContainer);
+            
+            return container;
+        }
+        
+        // No chart found, return text only
+        container.innerHTML = responseText.replace(/\n/g, '<br>');
+        return container;
+    }
 
     function injectStyles() {
         if (document.getElementById('amax-widget-styles')) return;
@@ -385,194 +511,210 @@
         const container = document.createElement('div');
         container.innerHTML = `
             <div class="amax-widget-btn" id="amaxWidgetBtn">
-                <img src="${CONFIG.logoUrl}" alt="AMAX" id="amaxBtnImg">
-                <div class="fallback" id="amaxBtnFallback">A</div>
+                <img src="${CONFIG.logoUrl}" alt="AMAX BI Assistant">
             </div>
             <div class="amax-chat" id="amaxChat">
                 <div class="amax-header">
-                    <div class="logo-section">
-                        <img src="${CONFIG.logoUrl}" alt="AMAX" id="amaxHeaderImg">
+                    <div class="logo">
+                        <div class="logo-icon">
+                            <img src="${CONFIG.logoUrl}" alt="AMAX">
+                        </div>
                         <h2>AMAX BI Assistant</h2>
                     </div>
                     <button class="amax-close" id="amaxClose">×</button>
                 </div>
                 <div class="amax-main">
                     <div class="amax-sidebar">
-                        <h3>Quick Questions</h3>
-                        <div id="amaxQuickQuestions"></div>
-                        <div class="amax-history-section">
+                        <div class="sidebar-section">
+                            <h3>Quick Questions</h3>
+                            <div id="amaxQuickQuestions"></div>
+                        </div>
+                        <div class="history-section">
                             <h3>History</h3>
-                            <div id="amaxChatHistory"></div>
+                            <div class="history-container" id="amaxChatHistory"></div>
                         </div>
                     </div>
                     <div class="amax-chat-area">
                         <div class="amax-messages" id="amaxMessages">
-                            <div class="amax-msg amax-bot">Welcome to AMAX! I'm your BI Assistant. How can I help with our insurance data today?</div>
+                            <div class="amax-msg bot">Welcome to AMAX! I'm your BI Assistant ready to help with insurance analytics and reports.</div>
                         </div>
-                        <div class="amax-typing" id="amaxTyping">
-                            <div class="amax-typing-dots">
-                                <span></span><span></span><span></span>
-                            </div>
-                        </div>
+                        <div class="amax-typing" id="amaxTyping">Assistant is typing...</div>
                         <div class="amax-input-area">
-                            <input type="text" class="amax-input" id="amaxInput" placeholder="Ask about premium, policies, agents..." autocomplete="off">
-                            <button class="amax-send" id="amaxSend">Send</button>
+                            <input type="text" class="amax-input" id="amaxInput" placeholder="Ask about premiums, trends, reports...">
+                            <button class="amax-send" id="amaxSend">→</button>
                         </div>
                     </div>
                 </div>
             </div>
         `;
+        
         document.body.appendChild(container);
         return container;
     }
 
-    function init() {
-        injectStyles();
-        createWidget();
-
+    function setupEventListeners() {
         const widgetBtn = document.getElementById('amaxWidgetBtn');
         const chat = document.getElementById('amaxChat');
         const closeBtn = document.getElementById('amaxClose');
-        const messages = document.getElementById('amaxMessages');
         const input = document.getElementById('amaxInput');
         const sendBtn = document.getElementById('amaxSend');
-        const quickQuestions = document.getElementById('amaxQuickQuestions');
-        const chatHistory = document.getElementById('amaxChatHistory');
-        const btnImg = document.getElementById('amaxBtnImg');
-        const btnFallback = document.getElementById('amaxBtnFallback');
-        const headerImg = document.getElementById('amaxHeaderImg');
         const typing = document.getElementById('amaxTyping');
+        const messages = document.getElementById('amaxMessages');
 
-        // Handle logo loading for button
-        btnImg.onload = function() {
-            this.classList.add('loaded');
-            widgetBtn.classList.add('has-logo');
-        };
-        
-        btnImg.onerror = function() {
-            this.classList.remove('loaded');
-            widgetBtn.classList.remove('has-logo');
-        };
-
-        // Handle logo loading for header
-        headerImg.onerror = function() {
-            this.style.display = 'none';
-        };
-
-        // Populate questions
-        QUESTIONS.forEach(q => {
-            const btn = document.createElement('button');
-            btn.className = 'amax-quick-question';
-            btn.textContent = q;
-            btn.onclick = () => sendMessage(q);
-            quickQuestions.appendChild(btn);
-        });
-
-        // Event handlers
-        widgetBtn.onclick = () => {
-            chat.classList.add('open');
-            input.focus();
-        };
-
-        closeBtn.onclick = () => chat.classList.remove('open');
-
-        sendBtn.onclick = () => sendMessage();
-        input.onkeypress = (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                sendMessage();
-            }
-        };
-
-        function showTyping() {
-            typing.classList.add('show');
-            messages.scrollTop = messages.scrollHeight;
-        }
-
-        function hideTyping() {
-            typing.classList.remove('show');
-        }
-
-        function addMessage(content, isUser = false, isError = false) {
-            const msg = document.createElement('div');
-            msg.className = `amax-msg ${isUser ? 'amax-user' : isError ? 'amax-error' : 'amax-bot'}`;
-            
-            if (typeof content === 'string') {
-                msg.innerHTML = content.replace(/\n/g, '<br>');
-            } else {
-                msg.appendChild(content);
-            }
-            
-            messages.appendChild(msg);
-            messages.scrollTop = messages.scrollHeight;
-        }
-
-        function addHistory(msg) {
-            history.unshift(msg);
-            if (history.length > CONFIG.maxHistory) history.pop();
-            
-            chatHistory.innerHTML = '';
-            history.forEach(h => {
-                const div = document.createElement('div');
-                div.className = 'amax-history-item';
-                div.textContent = h.length > 35 ? h.substring(0, 35) + '...' : h;
-                div.onclick = () => sendMessage(h);
-                chatHistory.appendChild(div);
-            });
-        }
-
-        async function sendMessage(text) {
-            const message = text || input.value.trim();
-            if (!message || processing) return;
-
-            const now = Date.now();
-            if (now - lastTime < CONFIG.rateLimit) return;
-
-            lastTime = now;
-            processing = true;
-            input.value = '';
-
-            addMessage(message, true);
-            addHistory(message);
-
-            input.disabled = true;
-            sendBtn.disabled = true;
-            showTyping();
-
-            try {
-                const response = await fetch(CONFIG.webhookUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        question: message,
-                        sessionId: `amax_${Date.now()}`,
-                        userId: `user_${Math.random().toString(36).substr(2, 9)}`
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Server error: ${response.status}`);
-                }
-
-                const data = await response.json();
-                addMessage(data.response || 'Sorry, no response received.');
-
-            } catch (error) {
-                console.error('Connection error:', error);
-                addMessage('Connection error. Please try again.', false, true);
-            } finally {
-                hideTyping();
-                processing = false;
-                input.disabled = false;
-                sendBtn.disabled = false;
+        widgetBtn.addEventListener('click', () => {
+            chat.classList.toggle('open');
+            if (chat.classList.contains('open')) {
                 input.focus();
             }
+        });
+
+        closeBtn.addEventListener('click', () => {
+            chat.classList.remove('open');
+        });
+
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !processing) {
+                sendMessage();
+            }
+        });
+
+        sendBtn.addEventListener('click', () => {
+            if (!processing) {
+                sendMessage();
+            }
+        });
+
+        // Setup quick questions
+        setupQuickQuestions();
+        setupHistory();
+    }
+
+    function setupQuickQuestions() {
+        const container = document.getElementById('amaxQuickQuestions');
+        quickQuestions.forEach(question => {
+            const btn = document.createElement('button');
+            btn.className = 'quick-btn';
+            btn.textContent = question;
+            btn.onclick = () => sendMessage(question);
+            container.appendChild(btn);
+        });
+    }
+
+    function setupHistory() {
+        updateHistory();
+    }
+
+    function addToHistory(message) {
+        history.unshift(message);
+        if (history.length > 10) history.pop();
+        updateHistory();
+    }
+
+    function updateHistory() {
+        const container = document.getElementById('amaxChatHistory');
+        container.innerHTML = '';
+        
+        history.slice(0, 5).forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'history-item';
+            div.textContent = item.length > 25 ? item.substring(0, 25) + '...' : item;
+            div.onclick = () => sendMessage(item);
+            container.appendChild(div);
+        });
+    }
+
+    function addMessage(content, isUser = false, isError = false) {
+        const messages = document.getElementById('amaxMessages');
+        const msg = document.createElement('div');
+        msg.className = `amax-msg ${isUser ? 'user' : isError ? 'error' : 'bot'}`;
+        
+        if (typeof content === 'string') {
+            msg.innerHTML = content.replace(/\n/g, '<br>');
+        } else {
+            msg.appendChild(content);
         }
+        
+        messages.appendChild(msg);
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    function showTyping() {
+        const typing = document.getElementById('amaxTyping');
+        typing.classList.add('show');
+        const messages = document.getElementById('amaxMessages');
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    function hideTyping() {
+        const typing = document.getElementById('amaxTyping');
+        typing.classList.remove('show');
+    }
+
+    async function sendMessage(text) {
+        const input = document.getElementById('amaxInput');
+        const sendBtn = document.getElementById('amaxSend');
+        
+        const message = text || input.value.trim();
+        if (!message) return;
+
+        const now = Date.now();
+        if (processing || now - lastTime < CONFIG.rateLimit) return;
+
+        lastTime = now;
+        processing = true;
+        input.value = '';
+
+        addMessage(message, true);
+        addToHistory(message);
+
+        input.disabled = true;
+        sendBtn.disabled = true;
+        showTyping();
+
+        try {
+            const response = await fetch(CONFIG.webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    question: message,
+                    sessionId: `amax_${Date.now()}`,
+                    userId: `user_${Math.random().toString(36).substr(2, 9)}`
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const content = await processResponse(data);
+            addMessage(content, false);
+
+        } catch (error) {
+            console.error('Connection error:', error);
+            addMessage('Connection error. Please try again.', false, true);
+        } finally {
+            hideTyping();
+            processing = false;
+            input.disabled = false;
+            sendBtn.disabled = false;
+            input.focus();
+        }
+    }
+
+    // Initialize when DOM is ready
+    function init() {
+        injectStyles();
+        createWidget();
+        setupEventListeners();
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadVegaLite().then(init).catch(console.error);
+        });
     } else {
-        init();
+        loadVegaLite().then(init).catch(console.error);
     }
+
 })();

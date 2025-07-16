@@ -1,6 +1,6 @@
 /*
- * AMAX Insurance BI Chat Widget v2.7
- * Clean Professional Version - Matches Image 2 Design
+ * AMAX Insurance BI Chat Widget v2.8
+ * Fixed: Logo display, HTTPS compatibility, Clean design
  */
 
 (function() {
@@ -9,23 +9,23 @@
     // Configuration
     const CONFIG = {
         webhookUrl: 'http://3.239.79.74:5678/webhook/amax-genBi',
-        logoUrl: './assets/amax-insurance-logo.jpg', // Using local assets folder
+        logoUrl: './assets/amax-insurance-logo.jpg',
         rateLimit: 2000,
         timeout: 30000,
         maxHistory: 10
     };
 
-    // Sample questions (matching Image 2)
+    // Sample questions
     const QUESTIONS = [
         "What was the total premium last quarter?",
-        "Show me new business count by month for this year",
+        "Show me new business count by month for this year", 
         "Who are the top 5 agents by premium?",
         "Show total payments by payment method",
         "What is the policy renewal rate?",
         "Show me claims by policy type"
     ];
 
-    // CSS Styles (Clean Design)
+    // CSS Styles
     const styles = `
         .amax-widget-btn {
             position: fixed !important;
@@ -44,6 +44,7 @@
             justify-content: center !important;
             border: none !important;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+            overflow: hidden !important;
         }
 
         .amax-widget-btn:hover {
@@ -52,10 +53,18 @@
         }
 
         .amax-widget-btn img {
-            width: 35px !important;
-            height: 35px !important;
+            width: 40px !important;
+            height: 40px !important;
             object-fit: contain !important;
-            border-radius: 4px !important;
+            border-radius: 6px !important;
+            display: block !important;
+        }
+
+        .amax-widget-btn .fallback {
+            color: white !important;
+            font-size: 24px !important;
+            font-weight: bold !important;
+            display: none !important;
         }
 
         .amax-chat {
@@ -93,6 +102,21 @@
             align-items: center !important;
         }
 
+        .amax-header .logo-section {
+            display: flex !important;
+            align-items: center !important;
+            gap: 10px !important;
+        }
+
+        .amax-header .logo-section img {
+            width: 30px !important;
+            height: 30px !important;
+            object-fit: contain !important;
+            background: white !important;
+            padding: 4px !important;
+            border-radius: 6px !important;
+        }
+
         .amax-header h2 {
             font-size: 18px !important;
             font-weight: 600 !important;
@@ -108,6 +132,12 @@
             padding: 5px !important;
             width: 30px !important;
             height: 30px !important;
+            border-radius: 50% !important;
+            transition: background 0.2s !important;
+        }
+
+        .amax-close:hover {
+            background: rgba(255,255,255,0.2) !important;
         }
 
         .amax-main {
@@ -173,6 +203,12 @@
             border-radius: 12px !important;
             font-size: 14px !important;
             line-height: 1.4 !important;
+            animation: amaxMsgFade 0.3s ease !important;
+        }
+
+        @keyframes amaxMsgFade {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .amax-msg.amax-user {
@@ -187,6 +223,22 @@
             color: #333 !important;
             align-self: flex-start !important;
             border-bottom-left-radius: 4px !important;
+        }
+
+        .amax-msg.amax-error {
+            background: #fee !important;
+            color: #d00 !important;
+            border: 1px solid #fcc !important;
+        }
+
+        .amax-https-warning {
+            background: #fff3cd !important;
+            color: #856404 !important;
+            border: 1px solid #ffeaa7 !important;
+            padding: 12px 16px !important;
+            border-radius: 8px !important;
+            font-size: 13px !important;
+            margin: 10px 0 !important;
         }
 
         .amax-input-area {
@@ -221,10 +273,16 @@
             font-weight: 600 !important;
             cursor: pointer !important;
             font-family: inherit !important;
+            transition: background 0.2s !important;
         }
 
-        .amax-send:hover {
+        .amax-send:hover:not(:disabled) {
             background: #b91c3c !important;
+        }
+
+        .amax-send:disabled {
+            background: #ccc !important;
+            cursor: not-allowed !important;
         }
 
         @media (max-width: 950px) {
@@ -243,6 +301,7 @@
     let history = [];
     let lastTime = 0;
     let processing = false;
+    let httpsWarningShown = false;
 
     function injectStyles() {
         if (document.getElementById('amax-widget-styles')) return;
@@ -256,11 +315,15 @@
         const container = document.createElement('div');
         container.innerHTML = `
             <div class="amax-widget-btn" id="amaxWidgetBtn">
-                <img src="${CONFIG.logoUrl}" alt="AMAX" onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\\"color:white;font-size:20px;font-weight:bold\\">A</div>'">
+                <img src="${CONFIG.logoUrl}" alt="AMAX" id="amaxBtnImg">
+                <div class="fallback" id="amaxBtnFallback">A</div>
             </div>
             <div class="amax-chat" id="amaxChat">
                 <div class="amax-header">
-                    <h2>AMAX BI Assistant</h2>
+                    <div class="logo-section">
+                        <img src="${CONFIG.logoUrl}" alt="AMAX" id="amaxHeaderImg">
+                        <h2>AMAX BI Assistant</h2>
+                    </div>
                     <button class="amax-close" id="amaxClose">×</button>
                 </div>
                 <div class="amax-main">
@@ -298,6 +361,24 @@
         const sendBtn = document.getElementById('amaxSend');
         const quickQuestions = document.getElementById('amaxQuickQuestions');
         const chatHistory = document.getElementById('amaxChatHistory');
+        const btnImg = document.getElementById('amaxBtnImg');
+        const btnFallback = document.getElementById('amaxBtnFallback');
+        const headerImg = document.getElementById('amaxHeaderImg');
+
+        // Handle logo loading
+        btnImg.onload = function() {
+            this.style.display = 'block';
+            btnFallback.style.display = 'none';
+        };
+        
+        btnImg.onerror = function() {
+            this.style.display = 'none';
+            btnFallback.style.display = 'block';
+        };
+
+        headerImg.onerror = function() {
+            this.style.display = 'none';
+        };
 
         // Populate questions
         QUESTIONS.forEach(q => {
@@ -323,10 +404,16 @@
             }
         };
 
-        function addMessage(content, isUser = false) {
+        function addMessage(content, isUser = false, isError = false) {
             const msg = document.createElement('div');
-            msg.className = `amax-msg ${isUser ? 'amax-user' : 'amax-bot'}`;
-            msg.textContent = content;
+            msg.className = `amax-msg ${isUser ? 'amax-user' : isError ? 'amax-error' : 'amax-bot'}`;
+            
+            if (typeof content === 'string') {
+                msg.innerHTML = content.replace(/\n/g, '<br>');
+            } else {
+                msg.appendChild(content);
+            }
+            
             messages.appendChild(msg);
             messages.scrollTop = messages.scrollHeight;
         }
@@ -344,6 +431,21 @@
                 div.onclick = () => sendMessage(h);
                 chatHistory.appendChild(div);
             });
+        }
+
+        function showHttpsWarning() {
+            if (httpsWarningShown) return;
+            httpsWarningShown = true;
+            
+            const warning = document.createElement('div');
+            warning.className = 'amax-https-warning';
+            warning.innerHTML = `
+                <strong>⚠️ Connection Issue:</strong><br>
+                This page is served over HTTPS but trying to connect to HTTP endpoint.<br>
+                <small>Contact your administrator to enable HTTPS for the webhook service.</small>
+            `;
+            messages.appendChild(warning);
+            messages.scrollTop = messages.scrollHeight;
         }
 
         async function sendMessage(text) {
@@ -374,11 +476,22 @@
                     })
                 });
 
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
+
                 const data = await response.json();
                 addMessage(data.response || 'Sorry, no response received.');
 
             } catch (error) {
-                addMessage('Connection error. Please try again.');
+                console.error('Connection error:', error);
+                
+                // Check if it's likely an HTTPS/HTTP mixed content error
+                if (window.location.protocol === 'https:' && CONFIG.webhookUrl.startsWith('http:')) {
+                    showHttpsWarning();
+                } else {
+                    addMessage('Connection error. Please try again.', false, true);
+                }
             } finally {
                 processing = false;
                 input.disabled = false;

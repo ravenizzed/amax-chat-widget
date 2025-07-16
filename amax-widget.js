@@ -1,6 +1,6 @@
 /*
  * amax-widget.js — AMAX Insurance BI Chat Widget
- * Improved layout with wider chat area and better aesthetics
+ * Complete fix with improved fonts and better chart debugging
  */
 (function() {
     'use strict';
@@ -190,7 +190,7 @@
 
         .amax-sidebar h3 {
             margin: 0 0 10px 0 !important;
-            font-size: 10px !important;
+            font-size: 11px !important;
             font-weight: 700 !important;
             color: #666 !important;
             text-transform: uppercase !important;
@@ -200,16 +200,16 @@
         .amax-sidebar .quick-btn {
             display: block !important;
             width: 100% !important;
-            padding: 8px 6px !important;
+            padding: 10px 8px !important;
             margin: 4px 0 !important;
             background: white !important;
             border: 1px solid #e9ecef !important;
             border-radius: 6px !important;
-            font-size: 10px !important;
+            font-size: 11px !important;
             color: #495057 !important;
             cursor: pointer !important;
             transition: all 0.2s !important;
-            line-height: 1.2 !important;
+            line-height: 1.3 !important;
             text-align: left !important;
             font-weight: 500 !important;
         }
@@ -225,9 +225,9 @@
             background: linear-gradient(135deg, #28a745, #20c997) !important;
             color: white !important;
             border: none !important;
-            padding: 8px 8px !important;
+            padding: 10px 8px !important;
             border-radius: 6px !important;
-            font-size: 9px !important;
+            font-size: 10px !important;
             cursor: pointer !important;
             margin: 8px 0 !important;
             transition: all 0.2s !important;
@@ -260,15 +260,15 @@
         }
 
         .history-item {
-            padding: 6px 4px !important;
+            padding: 8px 6px !important;
             margin: 3px 0 !important;
             background: white !important;
             border-radius: 4px !important;
-            font-size: 9px !important;
+            font-size: 10px !important;
             color: #666 !important;
             cursor: pointer !important;
             border: 1px solid #e9ecef !important;
-            line-height: 1.2 !important;
+            line-height: 1.3 !important;
             font-weight: 500 !important;
         }
 
@@ -345,6 +345,17 @@
             border-radius: 10px !important;
             margin: 15px 0 !important;
             text-align: center !important;
+        }
+
+        .debug-info {
+            background: #f8f9fa !important;
+            border: 1px solid #dee2e6 !important;
+            border-radius: 6px !important;
+            padding: 10px !important;
+            margin: 10px 0 !important;
+            font-size: 12px !important;
+            color: #6c757d !important;
+            font-family: monospace !important;
         }
 
         .amax-input-area {
@@ -466,12 +477,18 @@
         return randomQuestions[randomIndex];
     }
 
-    // Enhanced chart data parsing
+    // Enhanced chart data parsing with detailed debugging
     function parseChartData(responseText) {
-        console.log('🔍 PARSING CHART DATA:', responseText);
+        console.log('🔍 DETAILED CHART PARSING:', {
+            responseLength: responseText.length,
+            containsChart: responseText.includes('[CHART'),
+            containsSchema: responseText.includes('$schema:'),
+            firstLines: responseText.split('\n').slice(0, 5)
+        });
         
         if (responseText.includes('[CHART]') || responseText.includes('[CHART:')) {
-            console.log('❌ Found [CHART] placeholder - backend configuration issue');
+            console.log('❌ Found [CHART] placeholder - n8n workflow issue');
+            console.log('🔧 Fix needed: Update BI Reporter prompt to not use placeholders');
             return 'placeholder';
         }
         
@@ -479,7 +496,10 @@
         const schemaIndex = lines.findIndex(line => line.includes('$schema:'));
         
         if (schemaIndex === -1) {
-            console.log('❌ No $schema found - no chart data in response');
+            console.log('❌ No chart data found. Possible causes:');
+            console.log('   - generate_chart_tool not called');
+            console.log('   - Chart data not passed to BI Reporter');
+            console.log('   - Question not classified as chart request');
             return null;
         }
         
@@ -533,7 +553,7 @@
                 chartObj.mark = { type: 'bar', color: '#DC143C' };
             }
             
-            console.log('✅ PARSED CHART OBJECT:', chartObj);
+            console.log('✅ SUCCESSFULLY PARSED CHART:', chartObj);
             return chartObj;
             
         } catch (e) {
@@ -569,13 +589,23 @@
         const container = document.createElement('div');
         const responseText = typeof data.response === 'string' ? data.response : JSON.stringify(data.response, null, 2);
         
-        console.log('🔄 PROCESSING RESPONSE:', responseText);
+        console.log('🔄 PROCESSING RESPONSE:', {
+            type: typeof data.response,
+            length: responseText.length,
+            preview: responseText.substring(0, 200)
+        });
         
         const chartSpec = parseChartData(responseText);
         
         if (chartSpec === 'placeholder') {
+            const debugInfo = document.createElement('div');
+            debugInfo.className = 'debug-info';
+            debugInfo.innerHTML = '🔧 Debug: Backend returned [CHART] placeholder. Check n8n BI Reporter configuration.';
+            
             const textDiv = document.createElement('div');
-            textDiv.innerHTML = responseText.replace(/\[CHART[^\]]*\]/g, '<div class="chart-error">❌ Chart data not generated by backend. Please check n8n workflow configuration.</div>').replace(/\n/g, '<br>');
+            textDiv.innerHTML = responseText.replace(/\[CHART[^\]]*\]/g, '<div class="chart-error">❌ Chart placeholder detected - fix n8n workflow</div>').replace(/\n/g, '<br>');
+            
+            container.appendChild(debugInfo);
             container.appendChild(textDiv);
             return container;
         }
@@ -595,8 +625,14 @@
         }
         
         if (responseText.toLowerCase().includes('chart') || responseText.toLowerCase().includes('visualization')) {
+            const debugInfo = document.createElement('div');
+            debugInfo.className = 'debug-info';
+            debugInfo.innerHTML = '🔧 Debug: Chart mentioned but no data. Check if generate_chart_tool was called.';
+            
             const textDiv = document.createElement('div');
-            textDiv.innerHTML = responseText.replace(/\n/g, '<br>') + '<div class="chart-error">❌ Chart requested but no data received from backend</div>';
+            textDiv.innerHTML = responseText.replace(/\n/g, '<br>') + '<div class="chart-error">❌ Chart requested but no data from backend</div>';
+            
+            container.appendChild(debugInfo);
             container.appendChild(textDiv);
             return container;
         }

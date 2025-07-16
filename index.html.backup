@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>AMAX Widget Test</title>
+</head>
+<body>
+  <h1>AMAX Chat Widget Locally</h1>
+
+  <!-- This loads your widget script from the same folder -->
+  <script src="amax-widget.js"></script>
+</body>
+</html>

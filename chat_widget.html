@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AMAX Insurance BI Assistant</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        
+        /* Brand Colors */
+        :root {
+            --amax-red: #DC143C;
+            --amax-yellow: #FFD700;
+            --amax-dark: #1a1a1a;
+            --amax-gray: #f5f5f5;
+            --amax-white: #ffffff;
+            --shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* MODIFIED: Widget Button Style */
+        .amax-widget-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: var(--amax-red);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .amax-widget-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 15px 50px rgba(220, 20, 60, 0.4);
+        }
+        
+        /* Chat Window */
+        .amax-chat {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 900px;
+            height: 700px;
+            background: var(--amax-white);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            display: none;
+            overflow: hidden;
+            z-index: 9998;
+            flex-direction: column;
+        }
+        
+        .amax-chat.open {
+            display: flex;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        /* Header */
+        .amax-header {
+            background: var(--amax-red);
+            color: white;
+            padding: 20px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .amax-header h2 {
+            font-size: 22px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .amax-header .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* MODIFIED: Header Logo Icon Style */
+        .amax-header .logo-icon {
+            background: white;
+            color: var(--amax-red);
+            width: 35px;
+            height: 35px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .amax-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        
+        .amax-close:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        /* Main Layout */
+        .amax-main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        /* Sidebar */
+        .amax-sidebar {
+            width: 280px;
+            background: var(--amax-gray);
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar-section {
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .sidebar-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--amax-dark);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .quick-question {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 13px;
+            color: var(--amax-dark);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .quick-question:hover {
+            background: var(--amax-red);
+            color: white;
+            border-color: var(--amax-red);
+            transform: translateX(5px);
+        }
+        
+        .history-section {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .history-item {
+            padding: 10px 15px;
+            margin-bottom: 5px;
+            background: white;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .history-item:hover {
+            background: var(--amax-red);
+            color: white;
+        }
+        
+        /* Chat Area */
+        .amax-chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+        
+        .amax-messages {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .amax-msg {
+            max-width: 70%;
+            padding: 15px 20px;
+            border-radius: 15px;
+            font-size: 15px;
+            line-height: 1.6;
+            animation: msgFade 0.3s ease;
+        }
+        
+        @keyframes msgFade {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .amax-msg.user {
+            background: var(--amax-red);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+        }
+        
+        .amax-msg.bot {
+            background: var(--amax-gray);
+            color: var(--amax-dark);
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+        }
+        
+        .amax-msg.error {
+            background: #fee;
+            color: #d00;
+            border: 1px solid #fcc;
+        }
+        
+        /* Chart Container */
+        .chart-container {
+            margin: 10px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .chart-container h4 {
+            margin-bottom: 10px;
+            color: var(--amax-dark);
+            font-size: 16px;
+        }
+        
+        .amax-typing {
+            display: none;
+            align-self: flex-start;
+            padding: 15px 20px;
+            background: var(--amax-gray);
+            border-radius: 15px;
+            border-bottom-left-radius: 5px;
+        }
+        
+        .typing-dots {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .typing-dots span {
+            width: 10px;
+            height: 10px;
+            background: #999;
+            border-radius: 50%;
+            animation: typingDot 1.4s infinite ease-in-out;
+        }
+        
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes typingDot {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+        
+        /* Input Area */
+        .amax-input-area {
+            padding: 20px 30px;
+            border-top: 1px solid #e0e0e0;
+            background: white;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .amax-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.2s;
+        }
+        
+        .amax-input:focus {
+            border-color: var(--amax-red);
+        }
+        
+        .amax-send {
+            padding: 15px 30px;
+            background: var(--amax-red);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        
+        .amax-send:hover:not(:disabled) {
+            background: #b91c3c;
+            transform: scale(1.05);
+        }
+        
+        .amax-send:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        /* Rate Limit Warning */
+        .rate-limit-warning {
+            display: none;
+            padding: 10px;
+            background: #fff3cd;
+            color: #856404;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        /* Mobile Responsive */
+        @media (max-width: 950px) {
+            .amax-chat {
+                width: 100vw;
+                height: 100vh;
+                bottom: 0;
+                right: 0;
+                left: 0;
+                top: 0;
+                border-radius: 0;
+                max-width: none;
+                max-height: none;
+            }
+            
+            .amax-sidebar {
+                display: none;
+            }
+            
+            .amax-widget-btn {
+                bottom: 20px;
+                right: 20px;
+                z-index: 10000;
+            }
+            
+            .amax-messages {
+                padding: 20px;
+            }
+            
+            .amax-msg {
+                max-width: 85%;
+            }
+            
+            .amax-input-area {
+                padding: 15px;
+                position: sticky;
+                bottom: 0;
+                background: white;
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            }
+            
+            .amax-send {
+                padding: 15px 20px;
+            }
+        }
+        
+        @media (max-width: 400px) {
+            .amax-header h2 {
+                font-size: 18px;
+            }
+            
+            .amax-input {
+                font-size: 14px;
+                padding: 12px 15px;
+            }
+            
+            .amax-send {
+                padding: 12px 15px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="amax-widget-btn" id="amaxWidget">
+        <img src="C:\Users\ACER NITRO\OneDrive\Documents\amax-logo2.png" alt="AMAX BI Assistant" style="width: 30px; height: auto;">
+    </div>
+    
+    <div class="amax-chat" id="amaxChat">
+        <div class="amax-header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <img src="C:\Users\ACER NITRO\OneDrive\Documents\amax-logo2.png" alt="AMAX" style="width: 20px; height: auto;">
+                </div>
+                <h2>AMAX BI Assistant</h2>
+            </div>
+            <button class="amax-close" id="amaxClose">×</button>
+        </div>
+        
+        <div class="amax-main">
+            <div class="amax-sidebar">
+                <div class="sidebar-section">
+                    <h3>Quick Questions</h3>
+                    <div id="quickQuestions"></div>
+                </div>
+                <div class="history-section">
+                    <h3>History</h3>
+                    <div id="chatHistory"></div>
+                </div>
+            </div>
+            
+            <div class="amax-chat-area">
+                <div class="amax-messages" id="messages">
+                    <div class="amax-msg bot">
+                        Welcome to AMAX! I'm your BI Assistant. How can I help with our insurance data today? You can ask things like "Show me total premium by region" or "What was our new business count last month?"
+                    </div>
+                </div>
+                
+                <div class="amax-typing" id="typing">
+                    <div class="typing-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+                
+                <div class="rate-limit-warning" id="rateLimitWarning">
+                    Please wait a moment before sending another message...
+                </div>
+                
+                <div class="amax-input-area">
+                    <input 
+                        type="text" 
+                        class="amax-input" 
+                        id="userInput" 
+                        placeholder="Ask about premium, policies, agents..."
+                        autocomplete="off"
+                    />
+                    <button class="amax-send" id="sendBtn">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Configuration
+        const CONFIG = {
+            // IMPORTANT: Replace with your actual public webhook URL after deployment
+            webhookUrl: 'http://3.239.79.74:5678/webhook/amax-genBi',
+            sessionId: `amax_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            userId: `user_${Math.random().toString(36).substr(2, 9)}`,
+            rateLimit: 2000, // 2 seconds between messages
+            maxRetries: 3,
+            timeout: 120000 // 2 minutes
+        };
+        
+        // MODIFIED: Sample questions are now specific to insurance
+        const QUESTIONS = [
+            "What was the total premium last quarter?",
+            "Show me new business count by month for this year", 
+            "Who are the top 5 agents by premium?",
+            "Show total payments by payment method",
+            "What is the policy renewal rate?"
+        ];
+        
+        // State Management
+        let history = [];
+        let lastMessageTime = 0;
+        let isProcessing = false;
+        
+        // DOM Elements
+        const widget = document.getElementById('amaxWidget');
+        const chat = document.getElementById('amaxChat');
+        const closeBtn = document.getElementById('amaxClose');
+        const messages = document.getElementById('messages');
+        const input = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const typing = document.getElementById('typing');
+        const quickQuestions = document.getElementById('quickQuestions');
+        const chatHistory = document.getElementById('chatHistory');
+        const rateLimitWarning = document.getElementById('rateLimitWarning');
+        
+        // Initialize
+        function init() {
+            // Populate quick questions
+            QUESTIONS.forEach(q => {
+                const btn = document.createElement('button');
+                btn.className = 'quick-question';
+                btn.textContent = q;
+                btn.onclick = () => sendMessage(q);
+                quickQuestions.appendChild(btn);
+            });
+            
+            // Event listeners
+            widget.onclick = () => openChat();
+            closeBtn.onclick = () => closeChat();
+            sendBtn.onclick = () => sendMessage();
+            input.onkeypress = (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            };
+            
+            adjustForMobile();
+            window.addEventListener('resize', adjustForMobile);
+        }
+        
+        function adjustForMobile() {
+            if (window.innerWidth <= 950) {
+                widget.style.bottom = '20px';
+                widget.style.right = '20px';
+            }
+        }
+        
+        function openChat() {
+            chat.classList.add('open');
+            input.focus();
+            if (window.innerWidth <= 950) {
+                widget.style.zIndex = '10000';
+            }
+        }
+        
+        function closeChat() {
+            chat.classList.remove('open');
+        }
+        
+        function addToHistory(msg) {
+            history.unshift(msg);
+            if (history.length > 10) history.pop();
+            
+            chatHistory.innerHTML = '';
+            history.forEach(h => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.textContent = h;
+                div.onclick = () => sendMessage(h);
+                chatHistory.appendChild(div);
+            });
+        }
+        
+        function addMessage(content, isUser = false, isError = false) {
+            const msg = document.createElement('div');
+            msg.className = `amax-msg ${isUser ? 'user' : isError ? 'error' : 'bot'}`;
+            
+            if (typeof content === 'string') {
+                msg.innerHTML = content.replace(/\n/g, '<br>'); // Render newlines
+            } else {
+                msg.appendChild(content);
+            }
+            
+            messages.appendChild(msg);
+            messages.scrollTop = messages.scrollHeight;
+        }
+        
+        function showTyping() {
+            typing.style.display = 'block';
+            messages.scrollTop = messages.scrollHeight;
+        }
+        
+        function hideTyping() {
+            typing.style.display = 'none';
+        }
+        
+        function showRateLimit() {
+            rateLimitWarning.style.display = 'block';
+            setTimeout(() => {
+                rateLimitWarning.style.display = 'none';
+            }, 2000);
+        }
+        
+        async function renderChart(spec, container) {
+            try {
+                const chartDiv = document.createElement('div');
+                chartDiv.className = 'chart-container';
+                
+                // The title is now part of the Vega-Lite spec, so we don't need a separate h4
+                
+                const vegaDiv = document.createElement('div');
+                chartDiv.appendChild(vegaDiv);
+                
+                await vegaEmbed(vegaDiv, spec, {
+                    renderer: 'svg',
+                    actions: false,
+                    theme: 'latimes', // A clean theme that works well
+                    width: container.offsetWidth > 400 ? 400 : container.offsetWidth - 100 // Responsive width
+                });
+                
+                return chartDiv;
+            } catch (error) {
+                console.error('Chart rendering error:', error);
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'chart-container';
+                errorDiv.innerHTML = '<p style="color: #666;">A chart is ready but cannot be displayed in this view.</p>';
+                return errorDiv;
+            }
+        }
+        
+        async function processResponse(response) {
+            const container = document.createElement('div');
+            let responseText = (typeof response.response === 'string') ? response.response : JSON.stringify(response.response, null, 2);
+            
+            // Regular expression to find a Vega-Lite spec and the text before/after it
+            const chartRegex = /\{[\s\S]*?\$schema.*?vega-lite.*?[\s\S]*?\}/;
+            const match = responseText.match(chartRegex);
+
+            if (match) {
+                try {
+                    const spec = JSON.parse(match[0]);
+                    const textBefore = responseText.substring(0, match.index);
+                    const textAfter = responseText.substring(match.index + match[0].length);
+
+                    if (textBefore.trim()) {
+                        const beforeDiv = document.createElement('div');
+                        beforeDiv.innerHTML = textBefore.replace(/\n/g, '<br>');
+                        container.appendChild(beforeDiv);
+                    }
+
+                    const chartContainer = await renderChart(spec, messages);
+                    container.appendChild(chartContainer);
+
+                    if (textAfter.trim()) {
+                        const afterDiv = document.createElement('div');
+                        afterDiv.innerHTML = textAfter.replace(/\n/g, '<br>');
+                        container.appendChild(afterDiv);
+                    }
+                    return container;
+
+                } catch (e) {
+                    console.error("Failed to parse or render chart spec:", e);
+                    // Fallback to plain text if parsing fails
+                    container.innerHTML = responseText.replace(/\n/g, '<br>');
+                    return container;
+                }
+            }
+            
+            // If no chart is found, just return the plain text
+            container.innerHTML = responseText.replace(/\n/g, '<br>');
+            return container;
+        }
+        
+        async function sendMessage(text = null) {
+            const message = text || input.value.trim();
+            if (!message) return;
+            
+            if (isProcessing || (Date.now() - lastMessageTime < CONFIG.rateLimit)) {
+                showRateLimit();
+                return;
+            }
+            
+            lastMessageTime = Date.now();
+            isProcessing = true;
+            
+            input.value = '';
+            addMessage(message, true);
+            addToHistory(message);
+            
+            input.disabled = true;
+            sendBtn.disabled = true;
+            showTyping();
+            
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), CONFIG.timeout);
+                
+                const response = await fetch(CONFIG.webhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ question: message, sessionId: CONFIG.sessionId, userId: CONFIG.userId }),
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const processedContent = await processResponse(data);
+                    addMessage(processedContent, false);
+                } else {
+                    throw new Error(`Server responded with status: ${response.status}`);
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                const errorMessage = error.name === 'AbortError' 
+                    ? 'The request timed out. Please try a simpler question or check the server.'
+                    : 'Sorry, I encountered a connection error. Please ensure the service is running and try again.';
+                addMessage(errorMessage, false, true);
+            } finally {
+                hideTyping();
+                isProcessing = false;
+                input.disabled = false;
+                sendBtn.disabled = false;
+                input.focus();
+            }
+        }
+        
+        // Initialize on load
+        init();
+        
+    </script>
+</body>
+</html>

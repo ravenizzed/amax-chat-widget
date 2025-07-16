@@ -1,6 +1,6 @@
 /*
- * AMAX Insurance BI Chat Widget v2.8
- * Fixed: Logo display, HTTPS compatibility, Clean design
+ * AMAX Insurance BI Chat Widget v3.0
+ * Uses Vercel serverless proxy - HTTPS compatible
  */
 
 (function() {
@@ -8,7 +8,7 @@
 
     // Configuration
     const CONFIG = {
-        webhookUrl: 'http://3.239.79.74:5678/webhook/amax-genBi',
+        webhookUrl: window.location.origin + '/api/webhook', // Uses Vercel proxy
         logoUrl: './assets/amax-insurance-logo.jpg',
         rateLimit: 2000,
         timeout: 30000,
@@ -18,14 +18,14 @@
     // Sample questions
     const QUESTIONS = [
         "What was the total premium last quarter?",
-        "Show me new business count by month for this year", 
+        "Show me new business count by month for this year",
         "Who are the top 5 agents by premium?",
         "Show total payments by payment method",
         "What is the policy renewal rate?",
         "Show me claims by policy type"
     ];
 
-    // CSS Styles
+    // CSS Styles - Clean Design
     const styles = `
         .amax-widget-btn {
             position: fixed !important;
@@ -52,11 +52,20 @@
             box-shadow: 0 15px 50px rgba(220,20,60,0.4) !important;
         }
 
+        .amax-widget-btn.has-logo {
+            background: transparent !important;
+            padding: 0 !important;
+        }
+
         .amax-widget-btn img {
-            width: 40px !important;
-            height: 40px !important;
-            object-fit: contain !important;
-            border-radius: 6px !important;
+            width: 60px !important;
+            height: 60px !important;
+            border-radius: 50% !important;
+            object-fit: cover !important;
+            display: none !important;
+        }
+
+        .amax-widget-btn img.loaded {
             display: block !important;
         }
 
@@ -64,6 +73,10 @@
             color: white !important;
             font-size: 24px !important;
             font-weight: bold !important;
+            display: block !important;
+        }
+
+        .amax-widget-btn.has-logo .fallback {
             display: none !important;
         }
 
@@ -111,7 +124,7 @@
         .amax-header .logo-section img {
             width: 30px !important;
             height: 30px !important;
-            object-fit: contain !important;
+            object-fit: cover !important;
             background: white !important;
             padding: 4px !important;
             border-radius: 6px !important;
@@ -147,39 +160,69 @@
         }
 
         .amax-sidebar {
-            width: 250px !important;
+            width: 280px !important;
             background: #f8f9fa !important;
             border-right: 1px solid #e0e0e0 !important;
-            padding: 15px !important;
+            padding: 20px !important;
+            display: flex !important;
+            flex-direction: column !important;
         }
 
         .amax-sidebar h3 {
             font-size: 12px !important;
             font-weight: 600 !important;
             color: #666 !important;
-            margin-bottom: 10px !important;
+            margin-bottom: 12px !important;
             text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
         }
 
         .amax-quick-question {
             display: block !important;
             width: 100% !important;
             text-align: left !important;
-            padding: 8px 12px !important;
-            margin-bottom: 6px !important;
+            padding: 10px 14px !important;
+            margin-bottom: 8px !important;
             background: white !important;
             border: 1px solid #ddd !important;
-            border-radius: 6px !important;
+            border-radius: 8px !important;
             font-size: 12px !important;
             color: #333 !important;
             cursor: pointer !important;
             transition: all 0.2s !important;
+            line-height: 1.4 !important;
         }
 
         .amax-quick-question:hover {
             background: #DC143C !important;
             color: white !important;
             border-color: #DC143C !important;
+            transform: translateX(3px) !important;
+        }
+
+        .amax-history-section {
+            flex: 1 !important;
+            margin-top: 20px !important;
+            overflow-y: auto !important;
+        }
+
+        .amax-history-item {
+            padding: 8px 12px !important;
+            margin-bottom: 6px !important;
+            background: white !important;
+            border-radius: 6px !important;
+            font-size: 11px !important;
+            color: #666 !important;
+            cursor: pointer !important;
+            transition: all 0.2s !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+        }
+
+        .amax-history-item:hover {
+            background: #DC143C !important;
+            color: white !important;
         }
 
         .amax-chat-area {
@@ -231,14 +274,38 @@
             border: 1px solid #fcc !important;
         }
 
-        .amax-https-warning {
-            background: #fff3cd !important;
-            color: #856404 !important;
-            border: 1px solid #ffeaa7 !important;
+        .amax-typing {
+            display: none !important;
+            align-self: flex-start !important;
             padding: 12px 16px !important;
-            border-radius: 8px !important;
-            font-size: 13px !important;
-            margin: 10px 0 !important;
+            background: #f1f1f1 !important;
+            border-radius: 12px !important;
+            border-bottom-left-radius: 4px !important;
+        }
+
+        .amax-typing.show {
+            display: block !important;
+        }
+
+        .amax-typing-dots {
+            display: flex !important;
+            gap: 4px !important;
+        }
+
+        .amax-typing-dots span {
+            width: 8px !important;
+            height: 8px !important;
+            background: #999 !important;
+            border-radius: 50% !important;
+            animation: amaxTypingDot 1.4s infinite ease-in-out !important;
+        }
+
+        .amax-typing-dots span:nth-child(2) { animation-delay: 0.2s !important; }
+        .amax-typing-dots span:nth-child(3) { animation-delay: 0.4s !important; }
+
+        @keyframes amaxTypingDot {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
         }
 
         .amax-input-area {
@@ -257,6 +324,7 @@
             font-size: 14px !important;
             outline: none !important;
             font-family: inherit !important;
+            transition: border-color 0.2s !important;
         }
 
         .amax-input:focus {
@@ -273,16 +341,19 @@
             font-weight: 600 !important;
             cursor: pointer !important;
             font-family: inherit !important;
-            transition: background 0.2s !important;
+            transition: all 0.2s !important;
+            white-space: nowrap !important;
         }
 
         .amax-send:hover:not(:disabled) {
             background: #b91c3c !important;
+            transform: scale(1.02) !important;
         }
 
         .amax-send:disabled {
             background: #ccc !important;
             cursor: not-allowed !important;
+            transform: none !important;
         }
 
         @media (max-width: 950px) {
@@ -301,7 +372,6 @@
     let history = [];
     let lastTime = 0;
     let processing = false;
-    let httpsWarningShown = false;
 
     function injectStyles() {
         if (document.getElementById('amax-widget-styles')) return;
@@ -330,12 +400,19 @@
                     <div class="amax-sidebar">
                         <h3>Quick Questions</h3>
                         <div id="amaxQuickQuestions"></div>
-                        <h3 style="margin-top:20px;">History</h3>
-                        <div id="amaxChatHistory"></div>
+                        <div class="amax-history-section">
+                            <h3>History</h3>
+                            <div id="amaxChatHistory"></div>
+                        </div>
                     </div>
                     <div class="amax-chat-area">
                         <div class="amax-messages" id="amaxMessages">
                             <div class="amax-msg amax-bot">Welcome to AMAX! I'm your BI Assistant. How can I help with our insurance data today?</div>
+                        </div>
+                        <div class="amax-typing" id="amaxTyping">
+                            <div class="amax-typing-dots">
+                                <span></span><span></span><span></span>
+                            </div>
                         </div>
                         <div class="amax-input-area">
                             <input type="text" class="amax-input" id="amaxInput" placeholder="Ask about premium, policies, agents..." autocomplete="off">
@@ -364,18 +441,20 @@
         const btnImg = document.getElementById('amaxBtnImg');
         const btnFallback = document.getElementById('amaxBtnFallback');
         const headerImg = document.getElementById('amaxHeaderImg');
+        const typing = document.getElementById('amaxTyping');
 
-        // Handle logo loading
+        // Handle logo loading for button
         btnImg.onload = function() {
-            this.style.display = 'block';
-            btnFallback.style.display = 'none';
+            this.classList.add('loaded');
+            widgetBtn.classList.add('has-logo');
         };
         
         btnImg.onerror = function() {
-            this.style.display = 'none';
-            btnFallback.style.display = 'block';
+            this.classList.remove('loaded');
+            widgetBtn.classList.remove('has-logo');
         };
 
+        // Handle logo loading for header
         headerImg.onerror = function() {
             this.style.display = 'none';
         };
@@ -389,6 +468,7 @@
             quickQuestions.appendChild(btn);
         });
 
+        // Event handlers
         widgetBtn.onclick = () => {
             chat.classList.add('open');
             input.focus();
@@ -403,6 +483,15 @@
                 sendMessage();
             }
         };
+
+        function showTyping() {
+            typing.classList.add('show');
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function hideTyping() {
+            typing.classList.remove('show');
+        }
 
         function addMessage(content, isUser = false, isError = false) {
             const msg = document.createElement('div');
@@ -425,27 +514,11 @@
             chatHistory.innerHTML = '';
             history.forEach(h => {
                 const div = document.createElement('div');
-                div.className = 'amax-quick-question';
-                div.style.fontSize = '11px';
-                div.textContent = h.length > 30 ? h.substring(0, 30) + '...' : h;
+                div.className = 'amax-history-item';
+                div.textContent = h.length > 35 ? h.substring(0, 35) + '...' : h;
                 div.onclick = () => sendMessage(h);
                 chatHistory.appendChild(div);
             });
-        }
-
-        function showHttpsWarning() {
-            if (httpsWarningShown) return;
-            httpsWarningShown = true;
-            
-            const warning = document.createElement('div');
-            warning.className = 'amax-https-warning';
-            warning.innerHTML = `
-                <strong>⚠️ Connection Issue:</strong><br>
-                This page is served over HTTPS but trying to connect to HTTP endpoint.<br>
-                <small>Contact your administrator to enable HTTPS for the webhook service.</small>
-            `;
-            messages.appendChild(warning);
-            messages.scrollTop = messages.scrollHeight;
         }
 
         async function sendMessage(text) {
@@ -464,6 +537,7 @@
 
             input.disabled = true;
             sendBtn.disabled = true;
+            showTyping();
 
             try {
                 const response = await fetch(CONFIG.webhookUrl, {
@@ -485,14 +559,9 @@
 
             } catch (error) {
                 console.error('Connection error:', error);
-                
-                // Check if it's likely an HTTPS/HTTP mixed content error
-                if (window.location.protocol === 'https:' && CONFIG.webhookUrl.startsWith('http:')) {
-                    showHttpsWarning();
-                } else {
-                    addMessage('Connection error. Please try again.', false, true);
-                }
+                addMessage('Connection error. Please try again.', false, true);
             } finally {
+                hideTyping();
                 processing = false;
                 input.disabled = false;
                 sendBtn.disabled = false;

@@ -1,13 +1,13 @@
 /*
  * amax-widget.js — AMAX Insurance BI Chat Widget
- * Complete fix with improved fonts and better chart debugging
+ * Updated with corrected chart parser for WrenAI API deconstructed format
  */
 (function() {
     'use strict';
 
     const CONFIG = {
         webhookUrl: '/api/webhook',
-        logoUrl: 'https://raw.githubusercontent.com/ravenizzed/amax-chat-widget/main/assets/amax-insurance-logo.jpg',
+        logoUrl: 'https://raw.githubusercontent.com/ravenizzed/amax-chat-widget/main/assets/amax-logo-A.png',
         rateLimit: 2000,
         timeout: 30000
     };
@@ -358,6 +358,11 @@
             font-family: monospace !important;
         }
 
+        .response-text {
+            margin-bottom: 15px !important;
+            line-height: 1.6 !important;
+        }
+
         .amax-input-area {
             padding: 20px !important;
             border-top: 1px solid #e9ecef !important;
@@ -477,114 +482,208 @@
         return randomQuestions[randomIndex];
     }
 
-    // Enhanced chart data parsing with detailed debugging
+    // CORRECTED: Enhanced chart data parsing for WrenAI API deconstructed format
     function parseChartData(responseText) {
-        console.log('🔍 DETAILED CHART PARSING:', {
-            responseLength: responseText.length,
-            containsChart: responseText.includes('[CHART'),
-            containsSchema: responseText.includes('$schema:'),
-            firstLines: responseText.split('\n').slice(0, 5)
-        });
+        console.log('🔍 CHART PARSING - Raw response:', responseText.substring(0, 500));
         
+        // Handle [CHART] placeholder detection
         if (responseText.includes('[CHART]') || responseText.includes('[CHART:')) {
-            console.log('❌ Found [CHART] placeholder - n8n workflow issue');
-            console.log('🔧 Fix needed: Update BI Reporter prompt to not use placeholders');
+            console.log('❌ Found [CHART] placeholder - BI Reporter not including actual chart data');
             return 'placeholder';
         }
         
-        const lines = responseText.split('\n').map(line => line.trim()).filter(line => line);
-        const schemaIndex = lines.findIndex(line => line.includes('$schema:'));
-        
+        // Find the start of chart data
+        const schemaIndex = responseText.indexOf('$schema:');
         if (schemaIndex === -1) {
-            console.log('❌ No chart data found. Possible causes:');
-            console.log('   - generate_chart_tool not called');
-            console.log('   - Chart data not passed to BI Reporter');
-            console.log('   - Question not classified as chart request');
+            console.log('❌ No $schema: found in response');
             return null;
         }
         
+        // Extract chart section
+        const chartSection = responseText.substring(schemaIndex);
+        const lines = chartSection.split('\n').map(line => line.trim()).filter(line => line);
+        
+        console.log('📊 Chart section lines:', lines.slice(0, 10));
+        
         try {
-            const chartObj = {};
+            const chartObj = {
+                "$schema": "https://vega.github.io/schema/vega-lite/v5.json", // Fixed to v5
+                "config": {
+                    "background": "white",
+                    "font": "Roboto, Arial, Noto Sans, sans-serif"
+                },
+                "width": "container",
+                "height": 300
+            };
             
-            for (let i = schemaIndex; i < lines.length; i++) {
+            let currentContext = null;
+            let currentDataItem = null;
+            let dataIndex = -1;
+            
+            for (let i = 0; i < lines.length; i++) {
                 const line = lines[i];
                 
+                // Parse schema
                 if (line.includes('$schema:')) {
-                    chartObj['$schema'] = line.split('$schema:')[1];
-                } else if (line === 'config') {
-                    chartObj.config = {};
-                } else if (line === 'mark') {
-                    chartObj.mark = 'bar';
-                } else if (line.includes('title:')) {
-                    chartObj.title = line.split('title:')[1];
-                } else if (line === 'data') {
+                    const schemaUrl = line.split('$schema:')[1].trim();
+                    chartObj['$schema'] = schemaUrl;
+                    continue;
+                }
+                
+                // Parse title
+                if (line.includes('title:')) {
+                    chartObj.title = line.split('title:')[1].trim();
+                    continue;
+                }
+                
+                // Parse mark configuration
+                if (line === 'mark') {
+                    currentContext = 'mark';
+                    chartObj.mark = { type: 'bar' }; // Default
+                    continue;
+                }
+                
+                // Parse data section
+                if (line === 'data') {
+                    currentContext = 'data';
                     chartObj.data = { values: [] };
-                } else if (line === 'values') {
-                    // Skip
-                } else if (line.match(/^\d+$/)) {
-                    const dataObj = {};
-                    for (let j = i + 1; j < Math.min(i + 10, lines.length); j++) {
-                        const dataLine = lines[j];
-                        if (dataLine.includes(':') && !dataLine.match(/^\d+$/)) {
-                            const [key, value] = dataLine.split(':');
-                            if (key && value) {
-                                const numValue = parseFloat(value);
-                                dataObj[key] = isNaN(numValue) ? value : numValue;
-                            }
-                        } else if (dataLine.match(/^\d+$/)) {
-                            break;
-                        }
+                    continue;
+                }
+                
+                // Parse values array
+                if (line === 'values' && currentContext === 'data') {
+                    currentContext = 'values';
+                    continue;
+                }
+                
+                // Parse data items (numeric indices)
+                if (line.match(/^\d+$/) && currentContext === 'values') {
+                    dataIndex = parseInt(line);
+                    currentDataItem = {};
+                    chartObj.data.values[dataIndex] = currentDataItem;
+                    continue;
+                }
+                
+                // Parse key-value pairs within data items
+                if (line.includes(':') && currentDataItem) {
+                    const colonIndex = line.indexOf(':');
+                    const key = line.substring(0, colonIndex).trim();
+                    const value = line.substring(colonIndex + 1).trim();
+                    
+                    // Convert numeric values
+                    const numericValue = parseFloat(value);
+                    currentDataItem[key] = isNaN(numericValue) ? value : numericValue;
+                    continue;
+                }
+                
+                // Parse mark properties
+                if (currentContext === 'mark' && line.includes(':')) {
+                    const colonIndex = line.indexOf(':');
+                    const key = line.substring(0, colonIndex).trim();
+                    const value = line.substring(colonIndex + 1).trim();
+                    
+                    if (key === 'type') {
+                        chartObj.mark.type = value;
+                    } else if (key === 'color') {
+                        chartObj.mark.color = value;
+                    } else if (key === 'tooltip') {
+                        chartObj.mark.tooltip = value === 'true';
                     }
-                    if (Object.keys(dataObj).length > 0) {
-                        chartObj.data.values.push(dataObj);
+                    continue;
+                }
+                
+                // Parse other root-level properties
+                if (line.includes(':') && !currentContext) {
+                    const colonIndex = line.indexOf(':');
+                    const key = line.substring(0, colonIndex).trim();
+                    const value = line.substring(colonIndex + 1).trim();
+                    
+                    if (key === 'width') {
+                        chartObj.width = value === 'container' ? 'container' : parseInt(value);
+                    } else if (key === 'height') {
+                        chartObj.height = parseInt(value);
                     }
                 }
             }
             
-            if (chartObj.data && chartObj.data.values.length > 0) {
-                const firstRow = chartObj.data.values[0];
-                const fields = Object.keys(firstRow);
+            // Auto-generate encoding if not provided
+            if (!chartObj.encoding && chartObj.data && chartObj.data.values.length > 0) {
+                const firstItem = chartObj.data.values[0];
+                const keys = Object.keys(firstItem);
                 
-                chartObj.encoding = {
-                    x: { field: fields[0] || 'x', type: 'ordinal' },
-                    y: { field: fields[fields.length - 1] || 'y', type: 'quantitative' }
-                };
-                
-                chartObj.mark = { type: 'bar', color: '#DC143C' };
+                if (keys.length >= 2) {
+                    chartObj.encoding = {
+                        x: { 
+                            field: keys[0], 
+                            type: 'ordinal',
+                            axis: { labelAngle: -45 }
+                        },
+                        y: { 
+                            field: keys[keys.length - 1], 
+                            type: 'quantitative',
+                            format: keys[keys.length - 1].toLowerCase().includes('premium') ? '$,.0f' : ',.0f'
+                        }
+                    };
+                }
             }
             
-            console.log('✅ SUCCESSFULLY PARSED CHART:', chartObj);
+            // Set default mark if not specified
+            if (!chartObj.mark) {
+                chartObj.mark = { type: 'bar', color: '#DC143C', tooltip: true };
+            }
+            
+            console.log('✅ Successfully parsed chart:', chartObj);
+            console.log('📊 Data points:', chartObj.data?.values?.length || 0);
+            
             return chartObj;
             
-        } catch (e) {
-            console.error('❌ Chart parsing error:', e);
+        } catch (error) {
+            console.error('❌ Chart parsing error:', error);
+            console.log('📝 Failed to parse lines:', lines.slice(0, 20));
             return null;
         }
     }
 
+    // CORRECTED: Enhanced renderChart function with v5 compatibility
     async function renderChart(spec) {
         if (!vegaEmbed) {
-            console.error('Vega-Lite not loaded');
-            return document.createTextNode('[Chart loading failed]');
+            console.error('❌ Vega-Embed not loaded');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'chart-error';
+            errorDiv.innerHTML = '❌ Chart libraries not loaded';
+            return errorDiv;
         }
 
         const container = document.createElement('div');
         container.className = 'chart-container';
         
         try {
+            console.log('🎨 Rendering chart with spec:', spec);
+            
             await vegaEmbed(container, spec, {
-                width: 400,
-                height: 250,
-                padding: { left: 60, right: 30, top: 40, bottom: 60 }
+                theme: 'quartz',
+                actions: false,
+                renderer: 'svg',
+                width: 500,
+                height: 300,
+                padding: { left: 70, right: 30, top: 50, bottom: 70 }
             });
+            
+            console.log('✅ Chart rendered successfully');
             return container;
+            
         } catch (error) {
-            console.error('Chart rendering error:', error);
-            container.innerHTML = '<div class="chart-error">❌ Chart visualization failed</div>';
-            return container;
+            console.error('❌ Chart rendering error:', error);
+            console.log('🔍 Chart spec that failed:', spec);
+            
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'chart-error';
+            errorDiv.innerHTML = `❌ Chart rendering failed: ${error.message}`;
+            return errorDiv;
         }
     }
 
+    // CORRECTED: Enhanced processResponse function
     async function processResponse(data) {
         const container = document.createElement('div');
         const responseText = typeof data.response === 'string' ? data.response : JSON.stringify(data.response, null, 2);
@@ -592,51 +691,84 @@
         console.log('🔄 PROCESSING RESPONSE:', {
             type: typeof data.response,
             length: responseText.length,
-            preview: responseText.substring(0, 200)
+            hasSchema: responseText.includes('$schema:'),
+            hasPlaceholder: responseText.includes('[CHART')
         });
         
         const chartSpec = parseChartData(responseText);
         
+        // Handle [CHART] placeholder detection
         if (chartSpec === 'placeholder') {
             const debugInfo = document.createElement('div');
             debugInfo.className = 'debug-info';
-            debugInfo.innerHTML = '🔧 Debug: Backend returned [CHART] placeholder. Check n8n BI Reporter configuration.';
+            debugInfo.innerHTML = '🔧 <strong>Debug:</strong> BI Reporter returned [CHART] placeholder instead of actual chart data.<br>💡 <strong>Fix:</strong> Update BI Reporter system prompt to include full chart data.';
             
             const textDiv = document.createElement('div');
-            textDiv.innerHTML = responseText.replace(/\[CHART[^\]]*\]/g, '<div class="chart-error">❌ Chart placeholder detected - fix n8n workflow</div>').replace(/\n/g, '<br>');
+            textDiv.innerHTML = responseText
+                .replace(/\[CHART[^\]]*\]/g, '<div class="chart-error">❌ Chart data missing - n8n workflow issue</div>')
+                .replace(/\n/g, '<br>');
             
             container.appendChild(debugInfo);
             container.appendChild(textDiv);
             return container;
         }
         
-        if (chartSpec && chartSpec.data && chartSpec.data.values.length > 0) {
-            const textWithoutChart = responseText.replace(/\$schema:[\s\S]*?(?=\n\n|\n[A-Z]|$)/g, '').trim();
+        // Handle successful chart parsing
+        if (chartSpec && chartSpec.data && chartSpec.data.values && chartSpec.data.values.length > 0) {
+            console.log('✅ Valid chart data found, rendering...');
             
-            if (textWithoutChart) {
+            // Extract text before chart
+            const textBeforeChart = responseText.substring(0, responseText.indexOf('$schema:')).trim();
+            
+            if (textBeforeChart) {
                 const textDiv = document.createElement('div');
-                textDiv.innerHTML = textWithoutChart.replace(/\n/g, '<br>');
+                textDiv.className = 'response-text';
+                textDiv.innerHTML = textBeforeChart.replace(/\n/g, '<br>');
                 container.appendChild(textDiv);
             }
             
-            const chartContainer = await renderChart(chartSpec);
-            container.appendChild(chartContainer);
+            // Render chart
+            try {
+                const chartContainer = await renderChart(chartSpec);
+                container.appendChild(chartContainer);
+                
+                // Add any text after chart if exists
+                const textAfterChart = responseText.substring(responseText.lastIndexOf('encoding')).replace(/^.*?\n/, '').trim();
+                if (textAfterChart && textAfterChart.length > 10) {
+                    const afterDiv = document.createElement('div');
+                    afterDiv.className = 'response-text';
+                    afterDiv.innerHTML = textAfterChart.replace(/\n/g, '<br>');
+                    container.appendChild(afterDiv);
+                }
+                
+            } catch (error) {
+                console.error('❌ Chart rendering failed:', error);
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'chart-error';
+                errorDiv.innerHTML = `❌ Chart rendering failed: ${error.message}`;
+                container.appendChild(errorDiv);
+            }
+            
             return container;
         }
         
+        // Handle mentions of charts without data
         if (responseText.toLowerCase().includes('chart') || responseText.toLowerCase().includes('visualization')) {
+            console.log('⚠️ Chart mentioned but no data found');
+            
             const debugInfo = document.createElement('div');
             debugInfo.className = 'debug-info';
-            debugInfo.innerHTML = '🔧 Debug: Chart mentioned but no data. Check if generate_chart_tool was called.';
+            debugInfo.innerHTML = '🔧 <strong>Debug:</strong> Chart mentioned but no data found.<br>💡 <strong>Possible causes:</strong> generate_chart_tool not called, wrong question classification, or chart data not passed through workflow.';
             
             const textDiv = document.createElement('div');
-            textDiv.innerHTML = responseText.replace(/\n/g, '<br>') + '<div class="chart-error">❌ Chart requested but no data from backend</div>';
+            textDiv.innerHTML = responseText.replace(/\n/g, '<br>');
             
             container.appendChild(debugInfo);
             container.appendChild(textDiv);
             return container;
         }
         
+        // Default text response
         container.innerHTML = responseText.replace(/\n/g, '<br>');
         return container;
     }

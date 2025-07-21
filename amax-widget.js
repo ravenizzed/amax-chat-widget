@@ -1,7 +1,7 @@
 /**
  * COMPLETE AMAX Insurance BI Chat Widget - ALL FEATURES RESTORED
  * JWT Authentication, Session Continuity, Chart Processing, Security, Modern UI
- * 
+ *
  * Usage: <script src="https://amax-chat-widget.vercel.app/amax-widget.js"></script>
  */
 (function() {
@@ -12,7 +12,7 @@
     // ========================================
     // CONFIGURATION & SECURITY
     // ========================================
-    
+
     const CONFIG = {
         webhookUrl: 'https://amax-chat-widget.vercel.app/api/webhook',
         logoUrl: './assets/amax-logo-A.png', // Using your specific logo file
@@ -25,7 +25,7 @@
     // ========================================
     // JWT AUTHENTICATION SYSTEM (RESTORED)
     // ========================================
-    
+
     class JWTAuth {
         constructor() {
             this.currentUser = null;
@@ -44,7 +44,7 @@
         async authenticateUser() {
             console.log('🔍 Starting user authentication...');
             const currentDomain = window.location.hostname;
-            
+
             // Check if accessing protected ports directly
             if (this.isProtectedPortAccess()) {
                 console.log('🚨 Protected port access detected');
@@ -81,10 +81,10 @@
             const token = btoa(JSON.stringify(payload));
             this.token = token;
             this.currentUser = user;
-            
+
             localStorage.setItem('amax_jwt_token', token);
             localStorage.setItem('amax_user_session', JSON.stringify(user));
-            
+
             console.log('✅ JWT generated for:', user.email);
             return token;
         }
@@ -107,8 +107,8 @@
         isProtectedPortAccess() {
             const currentPort = window.location.port;
             const currentHost = window.location.hostname;
-            
-            return CONFIG.protectedPorts.includes(currentPort) && 
+
+            return CONFIG.protectedPorts.includes(currentPort) &&
                    (currentHost.includes('3.239.79.74') || currentHost.includes('localhost'));
         }
 
@@ -213,11 +213,11 @@
                             return;
                         }
                     }
-                    
+
                     // Default to guest user for now
                     resolve(this.generateJWT('guest@amaxinsurance.com'));
                 };
-                
+
                 setTimeout(checkForUser, 1000);
             });
         }
@@ -226,7 +226,7 @@
     // ========================================
     // SESSION MANAGEMENT WITH CONTINUITY (RESTORED)
     // ========================================
-    
+
     class SessionManager {
         constructor(auth) {
             this.auth = auth;
@@ -236,14 +236,14 @@
             this.init();
             console.log('📝 Session Manager initialized');
         }
-        
+
         init() {
             this.sessionId = this.getOrCreateSession();
             this.threadId = this.getOrCreateThread();
             this.loadConversationHistory();
             console.log('📊 Session:', this.sessionId, 'Thread:', this.threadId);
         }
-        
+
         getOrCreateSession() {
             let session = localStorage.getItem('amax_session_id');
             if (!session) {
@@ -252,7 +252,7 @@
             }
             return session;
         }
-        
+
         getOrCreateThread() {
             let thread = localStorage.getItem('amax_thread_id');
             if (!thread) {
@@ -261,7 +261,7 @@
             }
             return thread;
         }
-        
+
         loadConversationHistory() {
             const history = localStorage.getItem('amax_conversation_history');
             if (history) {
@@ -269,11 +269,11 @@
                 console.log('📚 Loaded', this.conversationHistory.length, 'conversation items');
             }
         }
-        
+
         saveConversationHistory() {
             localStorage.setItem('amax_conversation_history', JSON.stringify(this.conversationHistory));
         }
-        
+
         addToHistory(role, content) {
             this.conversationHistory.push({
                 role,
@@ -284,7 +284,7 @@
             });
             this.saveConversationHistory();
         }
-        
+
         getSessionData() {
             const user = this.auth.getCurrentUser();
             return {
@@ -301,25 +301,25 @@
     // ========================================
     // ENHANCED CHART PROCESSOR (RESTORED)
     // ========================================
-    
+
     class ChartProcessor {
         constructor() {
             this.vegaLoaded = false;
             this.loadVegaLite();
             console.log('📊 Chart Processor initialized');
         }
-        
+
         async loadVegaLite() {
             if (window.vegaEmbed) {
                 this.vegaLoaded = true;
                 return;
             }
-            
+
             try {
                 const script = document.createElement('script');
                 script.src = 'https://cdn.jsdelivr.net/npm/vega-embed@6';
-                script.onload = () => { 
-                    this.vegaLoaded = true; 
+                script.onload = () => {
+                    this.vegaLoaded = true;
                     console.log('📊 Vega-Lite loaded successfully');
                 };
                 document.head.appendChild(script);
@@ -327,7 +327,7 @@
                 console.error('Failed to load Vega-Lite:', e);
             }
         }
-        
+
         async processChart(responseText) {
             if (!this.vegaLoaded) {
                 await new Promise(resolve => {
@@ -340,44 +340,44 @@
                     }, 100);
                 });
             }
-            
+
             try {
                 const chartRegex = /\{[\s\S]*?["\']?\$schema["\']?\s*:\s*["\']https?:\/\/vega\.github\.io\/schema\/vega-lite\/v[0-9]+\.json["\'][\s\S]*?\}/g;
                 const matches = responseText.match(chartRegex);
-                
+
                 if (matches && matches.length > 0) {
                     console.log('📊 Chart detected, rendering...');
                     const chartSpec = JSON.parse(matches[0]);
                     return await this.renderChart(chartSpec);
                 }
-                
+
                 return null;
             } catch (e) {
                 console.error('Chart processing error:', e);
                 return null;
             }
         }
-        
+
         async renderChart(spec) {
             try {
                 const tempDiv = document.createElement('div');
                 tempDiv.style.width = '400px';
                 tempDiv.style.height = '300px';
                 document.body.appendChild(tempDiv);
-                
+
                 spec = this.applyAmaxBranding(spec);
-                
+
                 const result = await vegaEmbed(tempDiv, spec, {
                     actions: false,
                     renderer: 'svg'
                 });
-                
+
                 const svgElement = tempDiv.querySelector('svg');
                 const svgData = new XMLSerializer().serializeToString(svgElement);
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
                 const img = new Image();
-                
+
                 return new Promise((resolve) => {
                     img.onload = () => {
                         canvas.width = img.width;
@@ -390,13 +390,13 @@
                     };
                     img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
                 });
-                
+
             } catch (e) {
                 console.error('Chart rendering error:', e);
                 return null;
             }
         }
-        
+
         applyAmaxBranding(spec) {
             spec.config = spec.config || {};
             spec.config.background = '#ffffff';
@@ -404,11 +404,11 @@
             spec.config.title.color = '#DC143C';
             spec.config.title.fontSize = 16;
             spec.config.title.fontWeight = 'bold';
-            
+
             if (spec.mark && spec.mark.color === undefined) {
                 spec.mark.color = '#DC143C';
             }
-            
+
             return spec;
         }
     }
@@ -416,7 +416,7 @@
     // ========================================
     // MODERN WIDGET UI (RESTORED WITH ALL FEATURES)
     // ========================================
-    
+
     class WidgetUI {
         constructor(sessionManager, chartProcessor) {
             this.sessionManager = sessionManager;
@@ -433,7 +433,7 @@
             this.init();
             console.log('🎨 Widget UI initialized with all features');
         }
-        
+
         init() {
             this.injectStyles();
             this.createWidget();
@@ -441,14 +441,14 @@
             this.populateQuickQuestions();
             console.log('✅ Widget UI setup complete');
         }
-        
+
         injectStyles() {
             const style = document.createElement('style');
             style.textContent = `
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-                
+
                 * { box-sizing: border-box; }
-                
+
                 .amax-widget-button {
                     position: fixed !important;
                     bottom: 25px !important;
@@ -467,19 +467,19 @@
                     justify-content: center !important;
                     font-family: 'Inter', sans-serif !important;
                 }
-                
+
                 .amax-widget-button:hover {
                     transform: translateY(-2px) scale(1.05) !important;
                     box-shadow: 0 12px 40px rgba(220, 20, 60, 0.6) !important;
                 }
-                
+
                 .amax-widget-button img {
                     width: 32px !important;
                     height: 32px !important;
                     object-fit: contain !important;
                     border-radius: 4px !important;
                 }
-                
+
                 .amax-chat-container {
                     position: fixed !important;
                     bottom: 25px !important;
@@ -496,6 +496,10 @@
                     overflow: hidden !important;
                 }
                 
+                body.chat-open .amax-chat-container {
+                    display: flex !important;
+                }
+
                 .amax-header {
                     background: linear-gradient(135deg, #DC143C 0%, #B91C1C 100%) !important;
                     color: white !important;
@@ -504,13 +508,13 @@
                     justify-content: space-between !important;
                     align-items: center !important;
                 }
-                
+
                 .amax-header .logo {
                     display: flex !important;
                     align-items: center !important;
                     gap: 12px !important;
                 }
-                
+
                 .amax-header .logo img {
                     width: 40px !important;
                     height: 40px !important;
@@ -518,14 +522,14 @@
                     background: white !important;
                     padding: 4px !important;
                 }
-                
+
                 .amax-header h2 {
                     margin: 0 !important;
                     font-size: 18px !important;
                     font-weight: 600 !important;
                     letter-spacing: -0.5px !important;
                 }
-                
+
                 .amax-close {
                     background: none !important;
                     border: none !important;
@@ -540,17 +544,17 @@
                     justify-content: center !important;
                     transition: background 0.2s !important;
                 }
-                
+
                 .amax-close:hover {
                     background: rgba(255, 255, 255, 0.2) !important;
                 }
-                
+
                 .amax-main {
                     display: flex !important;
                     height: 100% !important;
                     min-height: 600px !important;
                 }
-                
+
                 .amax-sidebar {
                     width: 280px !important;
                     background: #f8fafc !important;
@@ -558,7 +562,7 @@
                     padding: 20px !important;
                     overflow-y: auto !important;
                 }
-                
+
                 .amax-sidebar h3 {
                     margin: 0 0 15px 0 !important;
                     font-size: 12px !important;
@@ -567,7 +571,7 @@
                     text-transform: uppercase !important;
                     letter-spacing: 0.8px !important;
                 }
-                
+
                 .quick-btn {
                     display: block !important;
                     width: 100% !important;
@@ -585,14 +589,14 @@
                     font-weight: 500 !important;
                     font-family: 'Inter', sans-serif !important;
                 }
-                
+
                 .quick-btn:hover {
                     background: #DC143C !important;
                     color: white !important;
                     border-color: #DC143C !important;
                     transform: translateY(-1px) !important;
                 }
-                
+
                 .random-btn {
                     background: linear-gradient(135deg, #059669, #047857) !important;
                     color: white !important;
@@ -609,12 +613,12 @@
                     width: 100% !important;
                     font-family: 'Inter', sans-serif !important;
                 }
-                
+
                 .random-btn:hover {
                     background: linear-gradient(135deg, #047857, #065f46) !important;
                     transform: translateY(-1px) !important;
                 }
-                
+
                 .disclaimer {
                     font-size: 9px !important;
                     color: #9ca3af !important;
@@ -622,16 +626,16 @@
                     margin-top: 8px !important;
                     font-style: italic !important;
                 }
-                
+
                 .history-section {
                     margin-top: 30px !important;
                 }
-                
+
                 .history-container {
                     max-height: 300px !important;
                     overflow-y: auto !important;
                 }
-                
+
                 .history-item {
                     padding: 10px 12px !important;
                     margin: 4px 0 !important;
@@ -644,41 +648,41 @@
                     transition: all 0.2s !important;
                     line-height: 1.3 !important;
                 }
-                
+
                 .history-item:hover {
                     background: #f1f5f9 !important;
                     border-color: #cbd5e1 !important;
                 }
-                
+
                 .amax-chat-area {
                     flex: 1 !important;
                     display: flex !important;
                     flex-direction: column !important;
                     background: white !important;
                 }
-                
+
                 .amax-messages {
                     flex: 1 !important;
                     padding: 20px !important;
                     overflow-y: auto !important;
                     scroll-behavior: smooth !important;
                 }
-                
+
                 .amax-message {
                     margin: 15px 0 !important;
                     display: flex !important;
                     flex-direction: column !important;
                     font-family: 'Inter', sans-serif !important;
                 }
-                
+
                 .amax-message.user {
                     align-items: flex-end !important;
                 }
-                
+
                 .amax-message.bot {
                     align-items: flex-start !important;
                 }
-                
+
                 .message-content {
                     max-width: 70% !important;
                     padding: 15px 18px !important;
@@ -687,20 +691,20 @@
                     line-height: 1.5 !important;
                     word-wrap: break-word !important;
                 }
-                
+
                 .amax-message.user .message-content {
                     background: #DC143C !important;
                     color: white !important;
                     border-bottom-right-radius: 4px !important;
                 }
-                
+
                 .amax-message.bot .message-content {
                     background: #f1f5f9 !important;
                     color: #374151 !important;
                     border-bottom-left-radius: 4px !important;
                     border: 1px solid #e2e8f0 !important;
                 }
-                
+
                 .chart-container {
                     margin: 15px 0 !important;
                     padding: 20px !important;
@@ -709,25 +713,25 @@
                     border: 1px solid #e2e8f0 !important;
                     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
                 }
-                
+
                 .chart-container img {
                     max-width: 100% !important;
                     height: auto !important;
                     border-radius: 8px !important;
                 }
-                
+
                 .amax-input-area {
                     padding: 20px !important;
                     border-top: 1px solid #e2e8f0 !important;
                     background: #f8fafc !important;
                 }
-                
+
                 .amax-input-container {
                     display: flex !important;
                     gap: 12px !important;
                     align-items: center !important;
                 }
-                
+
                 .amax-input {
                     flex: 1 !important;
                     padding: 12px 16px !important;
@@ -739,12 +743,12 @@
                     transition: all 0.2s !important;
                     background: white !important;
                 }
-                
+
                 .amax-input:focus {
                     border-color: #DC143C !important;
                     box-shadow: 0 0 0 3px rgba(220, 20, 60, 0.1) !important;
                 }
-                
+
                 .amax-send {
                     background: #DC143C !important;
                     color: white !important;
@@ -760,18 +764,18 @@
                     justify-content: center !important;
                     font-size: 16px !important;
                 }
-                
+
                 .amax-send:hover {
                     background: #B91C1C !important;
                     transform: scale(1.05) !important;
                 }
-                
+
                 .amax-send:disabled {
                     background: #9ca3af !important;
                     cursor: not-allowed !important;
                     transform: none !important;
                 }
-                
+
                 .typing-indicator {
                     display: flex !important;
                     align-items: center !important;
@@ -783,7 +787,7 @@
                     max-width: 100px !important;
                     border: 1px solid #e2e8f0 !important;
                 }
-                
+
                 .dot {
                     width: 6px !important;
                     height: 6px !important;
@@ -791,10 +795,10 @@
                     border-radius: 50% !important;
                     animation: typing 1.4s infinite ease-in-out !important;
                 }
-                
+
                 .dot:nth-child(1) { animation-delay: -0.32s !important; }
                 .dot:nth-child(2) { animation-delay: -0.16s !important; }
-                
+
                 @keyframes typing {
                     0%, 80%, 100% { transform: scale(0) !important; }
                     40% { transform: scale(1) !important; }
@@ -802,7 +806,7 @@
             `;
             document.head.appendChild(style);
         }
-        
+
         createWidget() {
             const container = document.createElement('div');
             container.innerHTML = `
@@ -850,7 +854,7 @@
             `;
             document.body.appendChild(container);
             console.log('🎨 Widget DOM created');
-            
+
             // Verify button exists
             setTimeout(() => {
                 const btn = document.getElementById('amaxWidgetBtn');
@@ -861,7 +865,7 @@
                 }
             }, 100);
         }
-        
+
         setupEventListeners() {
             const widgetBtn = document.getElementById('amaxWidgetBtn');
             const chatContainer = document.getElementById('amaxChat');
@@ -869,7 +873,7 @@
             const sendBtn = document.getElementById('amaxSend');
             const input = document.getElementById('amaxInput');
             const randomBtn = document.getElementById('randomBtn');
-            
+
             if (widgetBtn) {
                 widgetBtn.addEventListener('click', () => {
                     console.log('🖱️ Widget button clicked');
@@ -879,15 +883,15 @@
             } else {
                 console.error('❌ Widget button not found for event listener');
             }
-            
+
             if (closeBtn) {
                 closeBtn.addEventListener('click', () => this.closeWidget());
             }
-            
+
             if (sendBtn) {
                 sendBtn.addEventListener('click', () => this.sendMessage());
             }
-            
+
             if (input) {
                 input.addEventListener('keypress', (e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
@@ -896,12 +900,12 @@
                     }
                 });
             }
-            
+
             if (randomBtn) {
                 randomBtn.addEventListener('click', () => this.generateRandomQuestion());
             }
         }
-        
+
         populateQuickQuestions() {
             const container = document.getElementById('amaxQuickQuestions');
             if (container) {
@@ -914,76 +918,90 @@
                 });
             }
         }
-        
+
         openWidget() {
-            const widgetBtn = document.getElementById('amaxWidgetBtn');
+            const widgetBtn     = document.getElementById('amaxWidgetBtn');
             const chatContainer = document.getElementById('amaxChat');
-            
+
             if (widgetBtn && chatContainer) {
+                // Add body class so CSS can flip .amax-chat-container → flex
+                document.body.classList.add('chat-open');
+
+                // Hide the round icon
                 widgetBtn.style.display = 'none';
+
+                // (Optional – inline fallback if you removed !important from CSS)
                 chatContainer.style.display = 'flex';
+
                 this.isOpen = true;
                 console.log('✅ Widget opened');
-                
+
                 setTimeout(() => {
                     const input = document.getElementById('amaxInput');
                     if (input) input.focus();
                 }, 100);
             }
         }
-        
+
         closeWidget() {
-            const widgetBtn = document.getElementById('amaxWidgetBtn');
+            const widgetBtn     = document.getElementById('amaxWidgetBtn');
             const chatContainer = document.getElementById('amaxChat');
-            
+
             if (widgetBtn && chatContainer) {
-                chatContainer.style.display = 'none';
+                // Remove the class so CSS will hide the chat container again
+                document.body.classList.remove('chat-open');
+
+                // Show the round icon
                 widgetBtn.style.display = 'flex';
+
+                // (Optional – inline fallback if you removed !important from CSS)
+                chatContainer.style.display = 'none';
+
                 this.isOpen = false;
                 console.log('✅ Widget closed');
             }
         }
-        
+
         async sendMessage() {
             const input = document.getElementById('amaxInput');
             const message = input.value.trim();
-            
+
             if (!message || this.processing) return;
-            
+
             this.processing = true;
             input.value = '';
-            
+
             this.addMessage('user', message);
             this.showTypingIndicator();
-            
+
             try {
                 const response = await this.callWebhook(message);
                 this.hideTypingIndicator();
-                
+
                 const chartImage = await this.chartProcessor.processChart(response);
-                
+
                 if (chartImage) {
                     this.addChartMessage(response, chartImage);
                 } else {
                     this.addMessage('bot', response);
                 }
-                
+
                 this.sessionManager.addToHistory('user', message);
                 this.sessionManager.addToHistory('assistant', response);
                 this.updateHistory();
-                
+
             } catch (error) {
                 this.hideTypingIndicator();
                 this.addMessage('bot', 'I apologize, but I\'m experiencing technical difficulties. Please try again in a moment.');
                 console.error('Webhook error:', error);
             }
-            
+
             this.processing = false;
         }
-        
+
         async callWebhook(message) {
             const sessionData = this.sessionManager.getSessionData();
-            
+
             const payload = {
                 message: message,
                 sessionId: sessionData.sessionId,
@@ -993,9 +1011,9 @@
                 userName: sessionData.userName,
                 timestamp: sessionData.timestamp
             };
-            
+
             console.log('📤 Sending to webhook:', payload);
-            
+
             const response = await fetch(CONFIG.webhookUrl, {
                 method: 'POST',
                 headers: {
@@ -1003,21 +1021,21 @@
                 },
                 body: JSON.stringify(payload)
             });
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
+
             const result = await response.text();
             console.log('📥 Webhook response received');
             return result;
         }
-        
+
         sendQuickQuestion(question) {
             document.getElementById('amaxInput').value = question;
             this.sendMessage();
         }
-        
+
         generateRandomQuestion() {
             const randomQuestions = [
                 "What was our total premium collection last month?",
@@ -1029,54 +1047,54 @@
                 "Which product lines have the highest profit margins?",
                 "How many new policies were issued this quarter?"
             ];
-            
+
             const randomQuestion = randomQuestions[Math.floor(Math.random() * randomQuestions.length)];
             document.getElementById('amaxInput').value = randomQuestion;
             this.sendMessage();
         }
-        
+
         addMessage(sender, content) {
             const messagesContainer = document.getElementById('amaxMessages');
             const messageDiv = document.createElement('div');
             messageDiv.className = `amax-message ${sender}`;
-            
+
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
             contentDiv.innerHTML = content.replace(/\n/g, '<br>');
-            
+
             messageDiv.appendChild(contentDiv);
             messagesContainer.appendChild(messageDiv);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
-        
+
         addChartMessage(response, chartImage) {
             const messagesContainer = document.getElementById('amaxMessages');
             const messageDiv = document.createElement('div');
             messageDiv.className = 'amax-message bot';
-            
+
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
-            
+
             const cleanResponse = response.replace(/\{[\s\S]*?\$schema[\s\S]*?\}/g, '').trim();
-            
+
             contentDiv.innerHTML = `
                 ${cleanResponse.replace(/\n/g, '<br>')}
                 <div class="chart-container">
                     <img src="${chartImage}" alt="Data Visualization">
                 </div>
             `;
-            
+
             messageDiv.appendChild(contentDiv);
             messagesContainer.appendChild(messageDiv);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
-        
+
         showTypingIndicator() {
             const messagesContainer = document.getElementById('amaxMessages');
             const typingDiv = document.createElement('div');
             typingDiv.className = 'amax-message bot';
             typingDiv.id = 'typingIndicator';
-            
+
             typingDiv.innerHTML = `
                 <div class="typing-indicator">
                     <div class="dot"></div>
@@ -1084,28 +1102,28 @@
                     <div class="dot"></div>
                 </div>
             `;
-            
+
             messagesContainer.appendChild(typingDiv);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
-        
+
         hideTypingIndicator() {
             const typingIndicator = document.getElementById('typingIndicator');
             if (typingIndicator) {
                 typingIndicator.remove();
             }
         }
-        
+
         updateHistory() {
             const historyContainer = document.getElementById('amaxChatHistory');
             if (historyContainer) {
                 historyContainer.innerHTML = '';
-                
+
                 const recentHistory = this.sessionManager.conversationHistory
                     .filter(item => item.role === 'user')
                     .slice(-10)
                     .reverse();
-                
+
                 recentHistory.forEach(item => {
                     const historyItem = document.createElement('div');
                     historyItem.className = 'history-item';
@@ -1122,30 +1140,30 @@
     // ========================================
     // INITIALIZATION WITH ALL FEATURES
     // ========================================
-    
+
     async function initializeWidget() {
         try {
             console.log('🚀 Starting AMAX Widget initialization...');
-            
+
             const auth = new JWTAuth();
             const authResult = await auth.authenticateUser();
-            
+
             if (!authResult) {
                 console.error('❌ Authentication failed');
                 return;
             }
-            
+
             const sessionManager = new SessionManager(auth);
             const chartProcessor = new ChartProcessor();
             const widgetUI = new WidgetUI(sessionManager, chartProcessor);
-            
+
             // Make globally accessible
             window.widgetUI = widgetUI;
             window.openWidget = () => widgetUI.openWidget();
             window.closeWidget = () => widgetUI.closeWidget();
-            
+
             console.log('✅ AMAX Widget initialized successfully with ALL features!');
-            
+
         } catch (error) {
             console.error('❌ Widget initialization error:', error);
         }

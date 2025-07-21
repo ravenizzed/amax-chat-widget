@@ -7,12 +7,10 @@
   <meta name="description" content="AMAX Insurance Business Intelligence Assistant - AI-powered data analysis and reporting">
   <meta name="keywords" content="AMAX, insurance, business intelligence, AI assistant, data analysis">
 
-  <!-- Security Headers -->
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
   <meta http-equiv="X-XSS-Protection" content="1; mode=block">
 
-  <!-- Favicon -->
   <link rel="icon" type="image/png" href="./assets/amax-logo-favi-icon.png">
   <link rel="shortcut icon" href="./assets/amax-logo-favi-icon.png">
 
@@ -27,15 +25,17 @@
     }
     .page-content { display: none; }
 
-    /* iframe‑mode & loading/emergency UI */
-    body.iframe-mode { position: relative; width: 100%; height: 100vh; }
+    /* --- Loading and Fallback UI --- */
+
+    /* Emergency button is hidden by default */
     .emergency-button {
       position: fixed; bottom: 25px; right: 25px;
       width: 65px; height: 65px;
       background: linear-gradient(135deg, #DC143C 0%, #B91C1C 100%);
       border: none; border-radius: 50%;
       cursor: pointer; z-index: 999998;
-      display: flex; align-items: center; justify-content: center;
+      display: none; /* Hidden by default */
+      align-items: center; justify-content: center;
       box-shadow: 0 8px 32px rgba(220,20,60,0.4);
       transition: all .3s ease;
     }
@@ -44,42 +44,47 @@
       box-shadow: 0 12px 40px rgba(220,20,60,0.6);
     }
     .emergency-button img { width: 32px; height: 32px; object-fit: contain; }
-    .widget-loaded .emergency-button { display: none !important; }
 
+    /* When widget fails, show the emergency button */
+    body.widget-failed .emergency-button {
+      display: flex !important;
+    }
+
+    /* Loading indicator is visible by default */
     .loading-indicator {
       position: fixed; top: 50%; left: 50%;
       transform: translate(-50%, -50%);
-      background: rgba(255,255,255,0.9);
-      padding: 20px; border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-      z-index: 999997; display: none;
-      text-align: center;
+      z-index: 999997;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
     }
     .loading-spinner {
       width: 24px; height: 24px;
       border: 2px solid #e5e7eb; border-top: 2px solid #DC143C;
-      border-radius: 50%; animation: spin 1s linear infinite;
-      margin: 0 auto 10px;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
     }
     @keyframes spin { 0% {transform:rotate(0);} 100% {transform:rotate(360deg);} }
-    .widget-loaded .loading-indicator { display: none !important; }
+
+    /* Hide the loader once the widget script has loaded and created the button */
+    body.widget-loaded .loading-indicator {
+      display: none !important;
+    }
   </style>
 </head>
 
 <body>
-  <!-- Emergency fallback -->
-  <button class="emergency-button" id="emergencyBtn" onclick="emergencyOpen()" title="Open AMAX BI Assistant">
-    <img src="./assets/amax-logo-A.png" alt="AMAX" 
-         onerror="this.style.display='none'; this.parentNode.innerHTML='A';">
-  </button>
-
-  <!-- Loading spinner -->
   <div class="loading-indicator" id="loadingIndicator">
     <div class="loading-spinner"></div>
     <div>Loading AMAX BI Assistant...</div>
   </div>
 
-  <!-- Hidden SEO content -->
+  <button class="emergency-button" id="emergencyBtn" onclick="window.widgetUI.openWidget()" title="Open AMAX BI Assistant">
+    <img src="./assets/amax-logo-A.png" alt="AMAX" onerror="this.style.display='none'; this.parentNode.innerHTML='A';">
+  </button>
+
   <div class="page-content">
     <h1>AMAX Insurance BI Assistant</h1>
     <p>AI-powered business intelligence and data analysis for AMAX Insurance.</p>
@@ -94,40 +99,37 @@
       console.log('Running in iframe mode');
     }
 
-    // Emergency button logic
-    function emergencyOpen() {
-      console.log('Emergency button clicked');
-      const widgetBtn = document.getElementById('amaxWidgetBtn');
-      if (widgetBtn) {
-        widgetBtn.click();
-        console.log('Found and clicked widget button');
-      } else {
-        console.log('Widget button not found, retrying...');
-        setTimeout(emergencyOpen, 1000);
-      }
-    }
+    // --- Reworked Widget Load Detection ---
+    (function() {
+      let attempts = 0;
+      const maxAttempts = 15; // Increased attempts to 15 seconds for slower connections
+      const interval = 1000;
 
-    // Widget load detection
-    let widgetCheckAttempts = 0, maxAttempts = 10;
-    function checkWidgetLoaded() {
-      widgetCheckAttempts++;
-      console.log(`Checking for widget… attempt ${widgetCheckAttempts}`);
-      if (document.getElementById('amaxWidgetBtn')) {
-        document.body.classList.add('widget-loaded');
-        console.log('✅ Widget loaded successfully!');
-      } else if (widgetCheckAttempts < maxAttempts) {
-        setTimeout(checkWidgetLoaded, 1000);
-      } else {
-        console.log('❌ Widget failed to load');
-        document.getElementById('loadingIndicator').style.display = 'block';
-      }
-    }
-    window.addEventListener('load', () => {
-      console.log('Page loaded, starting widget detection…');
-      setTimeout(checkWidgetLoaded, 500);
-    });
+      const widgetCheck = setInterval(() => {
+        const widgetButton = document.getElementById('amaxWidgetBtn');
 
-    // Parent ↔︎ widget messaging (if used)
+        if (widgetButton) {
+          // SUCCESS: Widget button is found
+          console.log(`✅ Widget loaded successfully after ${attempts + 1} second(s).`);
+          document.body.classList.add('widget-loaded');
+          clearInterval(widgetCheck);
+        } else {
+          // NOT FOUND: Increment and check again
+          attempts++;
+          console.log(`Checking for widget… attempt ${attempts}`);
+          if (attempts >= maxAttempts) {
+            // FAILURE: Max attempts reached
+            console.error('❌ Widget failed to load after 15 seconds.');
+            clearInterval(widgetCheck);
+            document.body.classList.add('widget-loaded'); // Hide the loader
+            document.body.classList.add('widget-failed'); // Show the emergency button
+          }
+        }
+      }, interval);
+    })();
+
+    // --- Parent <-> Widget Messaging ---
+    // This part is fine as is
     window.addEventListener('message', event => {
       console.log('Received message:', event.data);
       if (event.origin.includes('amaxinsurance.com') ||
@@ -138,6 +140,7 @@
         }
       }
     });
+
     if (window.parent && window.parent !== window) {
       window.addEventListener('load', () => {
         window.parent.postMessage({ type: 'AMAX_WIDGET_READY', timestamp: Date.now() }, '*');
@@ -148,7 +151,6 @@
     console.log('Index.html script setup complete');
   </script>
 
-  <!-- Your widget loader (this file lives at ./amax-widget.js) -->
   <script src="./amax-widget.js"></script>
 </body>
 </html>

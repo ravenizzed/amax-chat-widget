@@ -34,7 +34,7 @@
                 {
                     email: 'ufarooq@amaxinsurance.com',
                     role: 'HOD',
-                    name: 'Umar Farooq',
+                    name: 'Umair Farooq',
                     permissions: ['admin', 'bi_access', 'all_data']
                 }
             ];

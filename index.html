@@ -3,11 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AMAX Insurance BI Assistant</title>
-    <link rel="icon" type="image/x-icon" href="./assets/amax-insurance-logo.jpg">
+    <title>AMAX BI Assistant</title>
+    <meta name="description" content="AMAX Insurance Business Intelligence Assistant - AI-powered data analysis and reporting">
+    <meta name="keywords" content="AMAX, insurance, business intelligence, AI assistant, data analysis">
+    
+    <!-- Security Headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    
+    <!-- Favicon - Using your specific favicon file -->
+    <link rel="icon" type="image/png" href="./assets/amax-logo-favi-icon.png">
+    <link rel="shortcut icon" href="./assets/amax-logo-favi-icon.png">
     
     <style>
-        /* Clean iframe-ready styling */
+        /* Minimal page styling for iframe compatibility */
         * {
             margin: 0;
             padding: 0;
@@ -15,55 +25,431 @@
         }
         
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: transparent;
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
+            min-height: 100vh;
+            overflow: hidden; /* Prevent scrollbars in iframe */
         }
         
-        /* Ensure widget renders properly in iframe */
-        html, body {
+        /* Hide any content, widget handles everything */
+        .page-content {
+            display: none;
+        }
+        
+        /* Ensure widget button is visible in iframe */
+        body.iframe-mode {
             position: relative;
-            z-index: 1;
+            width: 100%;
+            height: 100vh;
+        }
+        
+        /* Emergency fallback button - only shows if widget fails to load */
+        .emergency-button {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            width: 65px;
+            height: 65px;
+            background: linear-gradient(135deg, #DC143C 0%, #B91C1C 100%);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 999998;
+            box-shadow: 0 8px 32px rgba(220, 20, 60, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+        }
+        
+        .emergency-button:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 12px 40px rgba(220, 20, 60, 0.6);
+        }
+        
+        .emergency-button img {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+        
+        /* Hide emergency button when widget loads */
+        .widget-loaded .emergency-button {
+            display: none !important;
+        }
+        
+        /* Loading indicator */
+        .loading-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            z-index: 999997;
+            display: none;
+            font-family: 'Inter', sans-serif;
+            text-align: center;
+        }
+        
+        .loading-spinner {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #e5e7eb;
+            border-top: 2px solid #DC143C;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .widget-loaded .loading-indicator {
+            display: none !important;
         }
     </style>
 </head>
 <body>
-    <!-- AMAX Insurance BI Widget -->
-    <script src="./amax-widget.js"></script>
+    <!-- Emergency fallback button (hidden when widget loads properly) -->
+    <button class="emergency-button" id="emergencyBtn" onclick="emergencyOpen()" title="Open AMAX BI Assistant">
+        <img src="./assets/amax-logo-A.png" alt="AMAX" onerror="this.style.display='none'; this.parentNode.innerHTML='A';">
+    </button>
     
-    <!-- Auto-open for iframe embedding -->
+    <!-- Loading indicator -->
+    <div class="loading-indicator" id="loadingIndicator">
+        <div class="loading-spinner"></div>
+        <div>Loading AMAX BI Assistant...</div>
+    </div>
+    
+    <!-- Hidden page content for SEO/accessibility -->
+    <div class="page-content">
+        <h1>AMAX Insurance BI Assistant</h1>
+        <p>AI-powered business intelligence and data analysis for AMAX Insurance.</p>
+        <p>This widget provides instant access to business metrics, reports, and insights.</p>
+    </div>
+    
     <script>
-        // Detect if we're in an iframe
-        const isInIframe = window.self !== window.top;
+        console.log('AMAX Index.html loading...');
         
-        if (isInIframe) {
-            // Auto-open widget when embedded in iframe
-            document.addEventListener('DOMContentLoaded', function() {
-                setTimeout(() => {
-                    const widgetBtn = document.getElementById('amax-widget-button');
-                    if (widgetBtn) {
-                        // Trigger the widget to open
-                        widgetBtn.click();
-                        // Hide the button since we're in iframe
-                        widgetBtn.style.display = 'none';
-                    }
-                }, 500);
+        // Detect iframe environment
+        if (window.self !== window.top) {
+            document.body.classList.add('iframe-mode');
+            console.log('Running in iframe mode');
+        }
+        
+        // Emergency open function
+        function emergencyOpen() {
+            console.log('Emergency button clicked');
+            
+            // Try to find and click the widget button
+            const widgetBtn = document.getElementById('amaxWidgetBtn');
+            if (widgetBtn) {
+                widgetBtn.click();
+                console.log('Found and clicked widget button');
+            } else {
+                console.log('Widget button not found, retrying...');
+                setTimeout(emergencyOpen, 1000);
+            }
+        }
+        
+        // Widget load detection
+        let widgetCheckAttempts = 0;
+        const maxAttempts = 10;
+        
+        function checkWidgetLoaded() {
+            widgetCheckAttempts++;
+            console.log(`Checking for widget... attempt ${widgetCheckAttempts}`);
+            
+            const widgetBtn = document.getElementById('amaxWidgetBtn');
+            if (widgetBtn) {
+                document.body.classList.add('widget-loaded');
+                console.log('✅ Widget loaded successfully!');
+                return;
+            }
+            
+            if (widgetCheckAttempts < maxAttempts) {
+                setTimeout(checkWidgetLoaded, 1000);
+            } else {
+                console.log('❌ Widget failed to load after maximum attempts');
+                // Show loading indicator if widget fails
+                document.getElementById('loadingIndicator').style.display = 'block';
+            }
+        }
+        
+        // Start checking for widget after page loads
+        window.addEventListener('load', function() {
+            console.log('Page loaded, starting widget detection...');
+            setTimeout(checkWidgetLoaded, 500);
+        });
+        
+        // Handle widget communication for iframe
+        window.addEventListener('message', function(event) {
+            console.log('Received message:', event.data);
+            
+            // Allow parent window to communicate with widget
+            if (event.origin.includes('amaxinsurance.com') || 
+                event.origin.includes('maxbi.')) {
+                
+                // Pass user data to widget if provided
+                if (event.data.type === 'USER_AUTH' && event.data.user) {
+                    localStorage.setItem('amax_parent_user', JSON.stringify(event.data.user));
+                    console.log('Stored parent user data');
+                }
+            }
+        });
+        
+        // Notify parent window when widget is ready
+        if (window.parent && window.parent !== window) {
+            window.addEventListener('load', function() {
+                window.parent.postMessage({
+                    type: 'AMAX_WIDGET_READY',
+                    timestamp: Date.now()
+                }, '*');
+                console.log('Notified parent window of widget ready');
             });
         }
         
-        // Handle iframe resizing messages
+        console.log('Index.html script setup complete');
+    </script>
+    
+    <!-- Load the AMAX Widget - This should contain ALL your features -->
+    <script src="./amax-widget.js"></script>
+</body>
+</html>1~<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AMAX BI Assistant</title>
+    <meta name="description" content="AMAX Insurance Business Intelligence Assistant - AI-powered data analysis and reporting">
+    <meta name="keywords" content="AMAX, insurance, business intelligence, AI assistant, data analysis">
+    
+    <!-- Security Headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    
+    <!-- Favicon - Using your specific favicon file -->
+    <link rel="icon" type="image/png" href="./assets/amax-logo-favi-icon.png">
+    <link rel="shortcut icon" href="./assets/amax-logo-favi-icon.png">
+    
+    <style>
+        /* Minimal page styling for iframe compatibility */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: transparent;
+            min-height: 100vh;
+            overflow: hidden; /* Prevent scrollbars in iframe */
+        }
+        
+        /* Hide any content, widget handles everything */
+        .page-content {
+            display: none;
+        }
+        
+        /* Ensure widget button is visible in iframe */
+        body.iframe-mode {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+        }
+        
+        /* Emergency fallback button - only shows if widget fails to load */
+        .emergency-button {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            width: 65px;
+            height: 65px;
+            background: linear-gradient(135deg, #DC143C 0%, #B91C1C 100%);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 999998;
+            box-shadow: 0 8px 32px rgba(220, 20, 60, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+        }
+        
+        .emergency-button:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 12px 40px rgba(220, 20, 60, 0.6);
+        }
+        
+        .emergency-button img {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+        
+        /* Hide emergency button when widget loads */
+        .widget-loaded .emergency-button {
+            display: none !important;
+        }
+        
+        /* Loading indicator */
+        .loading-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            z-index: 999997;
+            display: none;
+            font-family: 'Inter', sans-serif;
+            text-align: center;
+        }
+        
+        .loading-spinner {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #e5e7eb;
+            border-top: 2px solid #DC143C;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .widget-loaded .loading-indicator {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Emergency fallback button (hidden when widget loads properly) -->
+    <button class="emergency-button" id="emergencyBtn" onclick="emergencyOpen()" title="Open AMAX BI Assistant">
+        <img src="./assets/amax-logo-A.png" alt="AMAX" onerror="this.style.display='none'; this.parentNode.innerHTML='A';">
+    </button>
+    
+    <!-- Loading indicator -->
+    <div class="loading-indicator" id="loadingIndicator">
+        <div class="loading-spinner"></div>
+        <div>Loading AMAX BI Assistant...</div>
+    </div>
+    
+    <!-- Hidden page content for SEO/accessibility -->
+    <div class="page-content">
+        <h1>AMAX Insurance BI Assistant</h1>
+        <p>AI-powered business intelligence and data analysis for AMAX Insurance.</p>
+        <p>This widget provides instant access to business metrics, reports, and insights.</p>
+    </div>
+    
+    <script>
+        console.log('AMAX Index.html loading...');
+        
+        // Detect iframe environment
+        if (window.self !== window.top) {
+            document.body.classList.add('iframe-mode');
+            console.log('Running in iframe mode');
+        }
+        
+        // Emergency open function
+        function emergencyOpen() {
+            console.log('Emergency button clicked');
+            
+            // Try to find and click the widget button
+            const widgetBtn = document.getElementById('amaxWidgetBtn');
+            if (widgetBtn) {
+                widgetBtn.click();
+                console.log('Found and clicked widget button');
+            } else {
+                console.log('Widget button not found, retrying...');
+                setTimeout(emergencyOpen, 1000);
+            }
+        }
+        
+        // Widget load detection
+        let widgetCheckAttempts = 0;
+        const maxAttempts = 10;
+        
+        function checkWidgetLoaded() {
+            widgetCheckAttempts++;
+            console.log(`Checking for widget... attempt ${widgetCheckAttempts}`);
+            
+            const widgetBtn = document.getElementById('amaxWidgetBtn');
+            if (widgetBtn) {
+                document.body.classList.add('widget-loaded');
+                console.log('✅ Widget loaded successfully!');
+                return;
+            }
+            
+            if (widgetCheckAttempts < maxAttempts) {
+                setTimeout(checkWidgetLoaded, 1000);
+            } else {
+                console.log('❌ Widget failed to load after maximum attempts');
+                // Show loading indicator if widget fails
+                document.getElementById('loadingIndicator').style.display = 'block';
+            }
+        }
+        
+        // Start checking for widget after page loads
+        window.addEventListener('load', function() {
+            console.log('Page loaded, starting widget detection...');
+            setTimeout(checkWidgetLoaded, 500);
+        });
+        
+        // Handle widget communication for iframe
         window.addEventListener('message', function(event) {
-            // Allow parent window to control widget
-            if (event.data === 'amax-widget-open') {
-                const widgetBtn = document.getElementById('amax-widget-button');
-                if (widgetBtn) widgetBtn.click();
-            } else if (event.data === 'amax-widget-close') {
-                const closeBtn = document.getElementById('amax-close-btn');
-                if (closeBtn) closeBtn.click();
+            console.log('Received message:', event.data);
+            
+            // Allow parent window to communicate with widget
+            if (event.origin.includes('amaxinsurance.com') || 
+                event.origin.includes('maxbi.')) {
+                
+                // Pass user data to widget if provided
+                if (event.data.type === 'USER_AUTH' && event.data.user) {
+                    localStorage.setItem('amax_parent_user', JSON.stringify(event.data.user));
+                    console.log('Stored parent user data');
+                }
             }
         });
+        
+        // Notify parent window when widget is ready
+        if (window.parent && window.parent !== window) {
+            window.addEventListener('load', function() {
+                window.parent.postMessage({
+                    type: 'AMAX_WIDGET_READY',
+                    timestamp: Date.now()
+                }, '*');
+                console.log('Notified parent window of widget ready');
+            });
+        }
+        
+        console.log('Index.html script setup complete');
     </script>
+    
+    <!-- Load the AMAX Widget - This should contain ALL your features -->
+    <script src="./amax-widget.js"></script>
 </body>
 </html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AMAX BI Assistant</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <!-- Load the widget script -->
+    <script src="amax-widget.js"></script>
+    
+    <!-- Auto-open the widget for iframe -->
+    <script>
+        // Wait for widget to load, then auto-open
+        setTimeout(() => {
+            const widgetBtn = document.getElementById('amaxWidgetBtn');
+            if (widgetBtn) {
+                widgetBtn.click(); // Auto-open widget
+                widgetBtn.style.display = 'none'; // Hide the button
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

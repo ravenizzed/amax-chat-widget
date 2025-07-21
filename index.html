@@ -3,30 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AMAX BI Assistant</title>
+    <title>AMAX Insurance BI Assistant</title>
+    <link rel="icon" type="image/x-icon" href="./assets/amax-insurance-logo.jpg">
+    
     <style>
-        body {
+        /* Clean iframe-ready styling */
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: transparent;
             overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+        
+        /* Ensure widget renders properly in iframe */
+        html, body {
+            position: relative;
+            z-index: 1;
         }
     </style>
 </head>
 <body>
-    <!-- Load the widget script -->
-    <script src="amax-widget.js"></script>
+    <!-- AMAX Insurance BI Widget -->
+    <script src="./amax-widget.js"></script>
     
-    <!-- Auto-open the widget for iframe -->
+    <!-- Auto-open for iframe embedding -->
     <script>
-        // Wait for widget to load, then auto-open
-        setTimeout(() => {
-            const widgetBtn = document.getElementById('amaxWidgetBtn');
-            if (widgetBtn) {
-                widgetBtn.click(); // Auto-open widget
-                widgetBtn.style.display = 'none'; // Hide the button
+        // Detect if we're in an iframe
+        const isInIframe = window.self !== window.top;
+        
+        if (isInIframe) {
+            // Auto-open widget when embedded in iframe
+            document.addEventListener('DOMContentLoaded', function() {
+                setTimeout(() => {
+                    const widgetBtn = document.getElementById('amax-widget-button');
+                    if (widgetBtn) {
+                        // Trigger the widget to open
+                        widgetBtn.click();
+                        // Hide the button since we're in iframe
+                        widgetBtn.style.display = 'none';
+                    }
+                }, 500);
+            });
+        }
+        
+        // Handle iframe resizing messages
+        window.addEventListener('message', function(event) {
+            // Allow parent window to control widget
+            if (event.data === 'amax-widget-open') {
+                const widgetBtn = document.getElementById('amax-widget-button');
+                if (widgetBtn) widgetBtn.click();
+            } else if (event.data === 'amax-widget-close') {
+                const closeBtn = document.getElementById('amax-close-btn');
+                if (closeBtn) closeBtn.click();
             }
-        }, 1000);
+        });
     </script>
 </body>
 </html>

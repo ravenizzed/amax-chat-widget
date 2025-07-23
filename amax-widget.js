@@ -10,7 +10,7 @@
     // CONFIGURATION
     // ========================================
     const CONFIG = {
-        version: '2.1.2',
+        version: '2.1.3', // Updated version for chart rendering fix
         webhookUrl: 'https://amax-chat-widget.vercel.app/api/webhook',
         
         // Security Configuration
@@ -53,7 +53,7 @@
     console.log('🚀 AMAX Widget loading - CSS VISIBILITY FIX v' + CONFIG.version);
 
     // ========================================
-    // AUTHENTICATION CLASSES (Same as before)
+    // AUTHENTICATION CLASSES
     // ========================================
     class JWTAuth {
         constructor() {
@@ -226,7 +226,9 @@
         }
     }
 
-    // SESSION & CHART CLASSES (Same as before, shortened for space)
+    // ========================================
+    // SESSION MANAGER
+    // ========================================
     class SessionManager {
         constructor(auth) {
             this.auth = auth;
@@ -304,61 +306,40 @@
         getHistory() { return this.sessionData.conversationHistory || []; }
     }
 
-    class ChartProcessor {
-        constructor() {
-            this.loadVegaLite();
-            console.log('📊 Chart Processor initialized');
-        }
-        async loadVegaLite() {
-            if (window.vegaEmbed) {
-                console.log('✅ Vega-Lite already loaded');
-                return;
-            }
-            try {
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/vega-embed@6';
-                document.head.appendChild(script);
-                await new Promise((resolve, reject) => {
-                    script.onload = resolve;
-                    script.onerror = reject;
-                });
-                console.log('✅ Vega-Lite loaded successfully');
-            } catch (error) {
-                console.error('❌ Failed to load Vega-Lite:', error);
-            }
-        }
-        async processChart(responseText) {
-            try {
-                const chartRegex = /\{[\s\S]*?\$schema.*?vega-lite.*?[\s\S]*?\}/g;
-                const matches = responseText.match(chartRegex);
-                if (!matches) return null;
-                const chartSpec = JSON.parse(matches[0]);
-                const tempDiv = document.createElement('div');
-                tempDiv.style.width = '100%';
-                tempDiv.style.height = '300px';
-                await window.vegaEmbed(tempDiv, chartSpec, { actions: false, renderer: 'canvas' });
-                const canvas = tempDiv.querySelector('canvas');
-                if (canvas) return canvas.toDataURL('image/png');
-            } catch (error) {
-                console.error('Chart processing error:', error);
-            }
-            return null;
-        }
-    }
-
+    // ========================================
+    // RESPONSE PARSER (remains the same)
+    // ========================================
     class ResponseParser {
         static parseResponse(rawResponse) {
             try {
                 if (typeof rawResponse === 'string') {
                     try {
                         const parsed = JSON.parse(rawResponse);
-                        if (parsed.response) return parsed.response;
-                        return rawResponse;
+                        // Check for nested 'response' field or direct chart spec
+                        if (parsed.response && typeof parsed.response === 'string') {
+                            try {
+                                const innerParsed = JSON.parse(parsed.response);
+                                if (innerParsed.response) return innerParsed.response;
+                                if (innerParsed.chart_specification) return innerParsed; // Return whole object if it's a chart
+                                if (innerParsed.chart_data?.vega_specification) return innerParsed; // Return whole object if it's a chart
+                                return parsed.response; // Fallback to inner string
+                            } catch (e) {
+                                return parsed.response; // Inner is not JSON, return as string
+                            }
+                        }
+                        if (parsed.chart_specification) return parsed; // Return whole object if it's a chart
+                        if (parsed.chart_data?.vega_specification) return parsed; // Return whole object if it's a chart
+                        if (parsed.response) return parsed.response; // Direct response field
+                        return rawResponse; // Fallback to raw string
                     } catch (e) {
-                        return rawResponse;
+                        return rawResponse; // Not JSON, return as string
                     }
                 }
                 if (rawResponse && rawResponse.response) return rawResponse.response;
+                // If it's already an object, check for chart spec directly
+                if (rawResponse && (rawResponse.chart_specification || rawResponse.chart_data?.vega_specification)) {
+                    return rawResponse;
+                }
                 return rawResponse || 'No response received';
             } catch (error) {
                 console.error('Response parsing error:', error);
@@ -368,12 +349,11 @@
     }
 
     // ========================================
-    // MAIN WIDGET UI - WITH CSS VISIBILITY FIX
+    // MAIN WIDGET UI - WITH CSS VISIBILITY FIX AND CHARTING
     // ========================================
     class WidgetUI {
-        constructor(sessionManager, chartProcessor) {
+        constructor(sessionManager) { // Removed chartProcessor from constructor
             this.sessionManager = sessionManager;
-            this.chartProcessor = chartProcessor;
             this.isOpen = false;
             this.processing = false;
             
@@ -762,6 +742,58 @@
                     0%, 60%, 100% { opacity: 0.3; transform: scale(1); }
                     30% { opacity: 1; transform: scale(1.2); }
                 }
+
+                /* Chart Container Styles - NEW */
+                .chart-container {
+                    margin: 16px 0 !important;
+                    padding: 20px !important;
+                    background: white !important;
+                    border-radius: 12px !important;
+                    border: 1px solid #e1e8ed !important;
+                    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+                    transition: all 0.3s ease !important;
+                }
+                .chart-container:hover {
+                    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12) !important;
+                }
+                .chart-title {
+                    font-weight: 600 !important;
+                    margin-bottom: 16px !important;
+                    color: #1f4e79 !important;
+                    font-size: 16px !important;
+                    text-align: center !important;
+                    border-bottom: 2px solid #f8f9fa !important;
+                    padding-bottom: 8px !important;
+                }
+                .vega-chart {
+                    display: flex !important;
+                    justify-content: center !important;
+                    align-items: center !important;
+                    min-height: 300px !important;
+                    border-radius: 8px !important;
+                    background: #fafbfc !important;
+                }
+                .vega-chart canvas, .vega-chart svg {
+                    border-radius: 8px !important;
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+                    max-width: 100% !important;
+                    height: auto !important;
+                }
+                /* Loading state for charts */
+                .vega-chart .loading {
+                    color: #6c757d !important;
+                    font-style: italic !important;
+                    text-align: center !important;
+                }
+                /* Error state for charts */
+                .vega-chart .error {
+                    color: #dc3545 !important;
+                    text-align: center !important;
+                    padding: 20px !important;
+                    background: #f8d7da !important;
+                    border-radius: 8px !important;
+                    border: 1px solid #f5c6cb !important;
+                }
             `;
 
             const styleElement = document.createElement('style');
@@ -1002,7 +1034,6 @@
             }
         }
 
-        // Rest of the methods (showTypingIndicator, addMessage, etc.) - same as before
         showTypingIndicator() {
             const messagesContainer = document.getElementById('amaxMessages');
             if (messagesContainer) {
@@ -1027,7 +1058,7 @@
             messageDiv.className = `message ${role}`;
             messageDiv.innerHTML = `<div class="message-content">${this.formatMessage(content)}</div>`;
             messagesContainer.appendChild(messageDiv);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            this.scrollToBottom(); // Use the new scroll method
         }
 
         formatMessage(content) {
@@ -1045,6 +1076,128 @@
                     item.content.length > 40 ? item.content.substring(0, 40) + '...' : item.content
                 }</button>`
             ).join('');
+        }
+
+        /**
+         * Enhanced chart rendering with proper Vega-Lite integration
+         * @param {object} chartSpec - The Vega-Lite chart specification.
+         */
+        renderChart(chartSpec) {
+            try {
+                console.log('🎨 Rendering chart with spec:', chartSpec);
+                        
+                const chartContainer = document.createElement('div');
+                chartContainer.className = 'chart-container';
+                        
+                const chartTitle = document.createElement('div');
+                chartTitle.className = 'chart-title';
+                chartTitle.textContent = chartSpec.title?.text || 'AMAX Business Intelligence Chart';
+                        
+                const chartDiv = document.createElement('div');
+                chartDiv.id = `chart-${Date.now()}`;
+                chartDiv.className = 'vega-chart';
+                        
+                chartContainer.appendChild(chartTitle);
+                chartContainer.appendChild(chartDiv);
+                
+                // Add to messages area
+                const messagesContainer = document.getElementById('amaxMessages'); // Corrected ID
+                if (!messagesContainer) {
+                    console.error('❌ Messages container not found');
+                    return;
+                }
+                        
+                messagesContainer.appendChild(chartContainer);
+
+                // Render with Vega-Lite
+                if (window.vegaEmbed) {
+                    console.log('✅ Vega-Embed library found, rendering chart...');
+                            
+                    window.vegaEmbed(chartDiv, chartSpec, {
+                        actions: false,
+                        renderer: 'svg',
+                        width: 450,
+                        height: 300,
+                        theme: 'quartz'
+                    }).then(result => {
+                        console.log('✅ Chart rendered successfully');
+                        chartDiv.style.backgroundColor = '#ffffff';
+                    }).catch(error => {
+                        console.error('❌ Chart rendering failed:', error);
+                        chartDiv.innerHTML = `
+                            <div style="text-align: center; padding: 20px; color: #dc3545;">
+                                <p>Chart rendering failed</p>
+                                <small>${error.message}</small>
+                            </div>
+                        `;
+                    });
+                } else {
+                    console.warn('⚠️ Vega-Embed library not loaded');
+                    chartDiv.innerHTML = `
+                        <div style="text-align: center; padding: 20px; color: #6c757d;">
+                            <p>Chart library loading...</p>
+                            <small>Vega-Embed not available</small>
+                        </div>
+                    `;
+                            
+                    // Try to load Vega-Embed dynamically
+                    this.loadVegaLibraries().then(() => {
+                        console.log('📚 Vega libraries loaded, retrying chart render...');
+                        this.renderChart(chartSpec); // Retry rendering after loading
+                    }).catch(error => {
+                        console.error('❌ Failed to load Vega libraries and render chart:', error);
+                        chartDiv.innerHTML = `
+                            <div style="text-align: center; padding: 20px; color: #dc3545;">
+                                <p>Critical: Chart libraries could not be loaded.</p>
+                                <small>${error.message}</small>
+                            </div>
+                        `;
+                    });
+                }
+                this.scrollToBottom();
+            } catch (error) {
+                console.error('❌ Chart container creation failed:', error);
+                this.addMessage('bot', 'Chart visualization temporarily unavailable.'); // Changed from displayMessage
+            }
+        }
+
+        /**
+         * Dynamically load Vega-Lite libraries if not available
+         */
+        async loadVegaLibraries() {
+            try {
+                if (window.vegaEmbed) {
+                    return Promise.resolve();
+                }
+                console.log('📚 Loading Vega-Lite libraries...');
+                // Load Vega, Vega-Lite, and Vega-Embed
+                const scripts = [
+                    'https://cdn.jsdelivr.net/npm/vega@5',
+                    'https://cdn.jsdelivr.net/npm/vega-lite@5', 
+                    'https://cdn.jsdelivr.net/npm/vega-embed@6'
+                ];
+                for (const src of scripts) {
+                    await new Promise((resolve, reject) => {
+                        const script = document.createElement('script');
+                        script.src = src;
+                        script.onload = resolve;
+                        script.onerror = reject;
+                        document.head.appendChild(script);
+                    });
+                }
+                console.log('✅ Vega libraries loaded successfully');
+                return Promise.resolve();
+            } catch (error) {
+                console.error('❌ Failed to load Vega libraries:', error);
+                return Promise.reject(error);
+            }
+        }
+
+        scrollToBottom() {
+            const messagesContainer = document.getElementById('amaxMessages');
+            if (messagesContainer) {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
         }
 
         async sendMessage() {
@@ -1066,19 +1219,32 @@
             try {
                 const rawResponse = await this.callWebhook(message);
                 this.hideTypingIndicator();
-                const parsedResponse = ResponseParser.parseResponse(rawResponse);
-                const chartImage = await this.chartProcessor.processChart(rawResponse);
+                const parsedResponse = ResponseParser.parseResponse(rawResponse); // This now returns parsed JSON or string
+
+                let chartSpec = null;
+                if (typeof parsedResponse === 'object' && parsedResponse !== null) {
+                    chartSpec = parsedResponse.chart_specification || parsedResponse.chart_data?.vega_specification;
+                }
                 
-                if (chartImage) {
-                    console.log('📊 Adding message with chart');
-                    this.addChartMessage(parsedResponse, chartImage);
+                if (chartSpec) {
+                    console.log('📊 Chart specification found, rendering chart...');
+                    this.renderChart(chartSpec);
+                    // If there's also a text response, display it below the chart
+                    if (parsedResponse.response && typeof parsedResponse.response === 'string') {
+                        this.addMessage('bot', parsedResponse.response);
+                    } else if (parsedResponse.text_response) { // Assuming another field for text
+                        this.addMessage('bot', parsedResponse.text_response);
+                    }
                 } else {
-                    console.log('💬 Adding regular message');
-                    this.addMessage('bot', parsedResponse);
+                    console.log('💬 No chart specification found, adding regular message');
+                    this.addMessage('bot', parsedResponse); // parsedResponse is a string here
                 }
                 
                 this.sessionManager.addToHistory('user', message);
-                this.sessionManager.addToHistory('assistant', parsedResponse);
+                // Add the actual text response to history, not the raw parsed object
+                this.sessionManager.addToHistory('assistant', 
+                    (typeof parsedResponse === 'object' && parsedResponse.response) ? parsedResponse.response : String(parsedResponse)
+                );
                 this.updateHistory();
                 
             } catch (error) {
@@ -1141,8 +1307,8 @@
             console.log('✅ Authentication successful');
             
             const sessionManager = new SessionManager(auth);
-            const chartProcessor = new ChartProcessor();
-            const widgetUI = new WidgetUI(sessionManager, chartProcessor);
+            // Removed ChartProcessor instantiation
+            const widgetUI = new WidgetUI(sessionManager); // Pass only sessionManager
             
             window.widgetUI = widgetUI;
             window.openWidget = () => {

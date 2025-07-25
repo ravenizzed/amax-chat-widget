@@ -857,8 +857,8 @@
                 }
                 
                 .metadata-toggle {
-                    margin-top: 16px !important;
-                    padding-top: 16px !important;
+                    margin-top: 8px !important;
+                    padding-top: 18px !important;
                     border-top: 1px solid #e5e7eb !important;
                     text-align: center !important;
                 }
@@ -866,10 +866,10 @@
                 .metadata-button {
                     background: none !important;
                     border: 1px solid #e5e7eb !important;
-                    padding: 6px 12px !important;
-                    border-radius: 6px !important;
+                    padding: 4px 8px !important;
+                    border-radius: 4px !important;
                     cursor: pointer !important;
-                    font-size: 11px !important;
+                    font-size: 10px !important;
                     color: #6b7280 !important;
                     transition: all 0.2s !important;
                 }
@@ -881,11 +881,11 @@
                 
                 .metadata-content {
                     display: none !important;
-                    margin-top: 12px !important;
-                    padding: 12px !important;
+                    margin-top: 8px !important;
+                    padding: 8px !important;
                     background: #f9fafb !important;
-                    border-radius: 8px !important;
-                    font-size: 11px !important;
+                    border-radius: 6px !important;
+                    font-size: 10px !important;
                     color: #6b7280 !important;
                     text-align: left !important;
                 }
@@ -895,8 +895,8 @@
                 }
                 
                 .metadata-item {
-                    margin: 6px 0 !important;
-                    line-height: 1.4 !important;
+                    margin: 4px 0 !important;
+                    line-height: 1.3 !important;
                 }
                 
                 .metadata-label {
@@ -905,13 +905,13 @@
                 }
                 
                 .sql-query {
-                    margin-top: 8px !important;
-                    padding: 8px !important;
+                    margin-top: 6px !important;
+                    padding: 6px !important;
                     background: #1f2937 !important;
                     color: #f9fafb !important;
-                    border-radius: 6px !important;
+                    border-radius: 4px !important;
                     font-family: 'Courier New', monospace !important;
-                    font-size: 10px !important;
+                    font-size: 9px !important;
                     overflow-x: auto !important;
                     white-space: pre-wrap !important;
                     word-break: break-all !important;

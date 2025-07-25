@@ -349,7 +349,7 @@
     }
 
     // ========================================
-    // ANALYSIS FORMATTER - NEW
+    // UPDATED ANALYSIS FORMATTER - FOR NEW RESPONSE FORMAT
     // ========================================
     class AnalysisFormatter {
         static formatAnalysis(analysisText) {
@@ -368,42 +368,42 @@
                 section = section.trim();
                 if (!section) return;
 
-                // Check for KEY FINDING
-                if (section.includes('KEY FINDING')) {
-                    const content = section.replace(/\*\*KEY FINDING\*\*:?/i, '').trim();
+                // Check for ANSWER section
+                if (section.includes('ANSWER:')) {
+                    const content = section.replace(/ANSWER:?/i, '').trim();
                     formattedHTML += `
-                        <div class="analysis-section key-finding">
+                        <div class="analysis-section direct-answer">
                             <div class="section-header">
                                 <span class="section-icon">🎯</span>
-                                <span class="section-title">KEY FINDING</span>
+                                <span class="section-title">DIRECT ANSWER</span>
                             </div>
-                            <div class="section-content">${this.formatText(content)}</div>
+                            <div class="section-content answer-content">${this.formatText(content)}</div>
                         </div>
                     `;
                 }
-                // Check for BUSINESS INSIGHT
-                else if (section.includes('BUSINESS INSIGHT')) {
-                    const content = section.replace(/\*\*BUSINESS INSIGHT\*\*:?/i, '').trim();
+                // Check for KEY INSIGHTS section
+                else if (section.includes('KEY INSIGHTS:')) {
+                    const content = section.replace(/KEY INSIGHTS:?/i, '').trim();
                     formattedHTML += `
-                        <div class="analysis-section business-insight">
+                        <div class="analysis-section key-insights">
                             <div class="section-header">
                                 <span class="section-icon">💡</span>
-                                <span class="section-title">BUSINESS INSIGHT</span>
+                                <span class="section-title">KEY INSIGHTS</span>
                             </div>
-                            <div class="section-content">${this.formatText(content)}</div>
+                            <div class="section-content insights-content">${this.formatInsights(content)}</div>
                         </div>
                     `;
                 }
-                // Check for STRATEGIC OPPORTUNITY
-                else if (section.includes('STRATEGIC OPPORTUNITY')) {
-                    const content = section.replace(/\*\*STRATEGIC OPPORTUNITY\*\*:?/i, '').trim();
+                // Check for FINCH'S TAKE section
+                else if (section.includes("FINCH'S TAKE:")) {
+                    const content = section.replace(/FINCH'S TAKE:?/i, '').trim();
                     formattedHTML += `
-                        <div class="analysis-section strategic-opportunity">
+                        <div class="analysis-section finch-opinion">
                             <div class="section-header">
-                                <span class="section-icon">🚀</span>
-                                <span class="section-title">STRATEGIC OPPORTUNITY</span>
+                                <span class="section-icon">🧠</span>
+                                <span class="section-title">FINCH'S TAKE</span>
                             </div>
-                            <div class="section-content">${this.formatText(content)}</div>
+                            <div class="section-content opinion-content">${this.formatText(content)}</div>
                         </div>
                     `;
                 }
@@ -418,6 +418,15 @@
 
         static formatText(text) {
             return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\n/g, '<br>');
+        }
+
+        static formatInsights(text) {
+            // Handle bullet points in insights
+            return text
+                .replace(/•\s*(.*?)(?=\n|$)/g, '<div class="insight-bullet">• $1</div>')
                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                 .replace(/\*(.*?)\*/g, '<em>$1</em>')
                 .replace(/\n/g, '<br>');
@@ -773,32 +782,71 @@
                     line-height: 1.6 !important;
                     color: #374151 !important;
                 }
-                
-                .key-finding {
-                    background: #fef3c7 !important;
-                    border-color: #fbbf24 !important;
+
+                /* Direct Answer Section */
+                .direct-answer {
+                    background: #f0f9ff !important;
+                    border-color: #0ea5e9 !important;
+                    border-left: 4px solid #0ea5e9 !important;
                 }
-                
-                .key-finding .section-title {
+
+                .direct-answer .section-title {
+                    color: #0c4a6e !important;
+                }
+
+                .answer-content {
+                    font-size: 16px !important;
+                    font-weight: 600 !important;
+                    color: #0c4a6e !important;
+                    background: #e0f2fe !important;
+                    padding: 12px !important;
+                    border-radius: 8px !important;
+                    margin-top: 8px !important;
+                }
+
+                /* Key Insights Section */
+                .key-insights {
+                    background: #fef3c7 !important;
+                    border-color: #f59e0b !important;
+                    border-left: 4px solid #f59e0b !important;
+                }
+
+                .key-insights .section-title {
                     color: #92400e !important;
                 }
-                
-                .business-insight {
-                    background: #dbeafe !important;
-                    border-color: #60a5fa !important;
+
+                .insights-content {
+                    margin-top: 8px !important;
                 }
-                
-                .business-insight .section-title {
-                    color: #1e40af !important;
+
+                .insight-bullet {
+                    margin: 6px 0 !important;
+                    padding-left: 8px !important;
+                    font-size: 14px !important;
+                    line-height: 1.5 !important;
+                    color: #374151 !important;
                 }
-                
-                .strategic-opportunity {
+
+                /* Finch's Opinion Section */
+                .finch-opinion {
                     background: #f3e8ff !important;
-                    border-color: #c084fc !important;
+                    border-color: #a855f7 !important;
+                    border-left: 4px solid #a855f7 !important;
                 }
-                
-                .strategic-opportunity .section-title {
+
+                .finch-opinion .section-title {
                     color: #6b21a8 !important;
+                }
+
+                .opinion-content {
+                    font-style: italic !important;
+                    font-size: 14px !important;
+                    line-height: 1.6 !important;
+                    color: #374151 !important;
+                    background: #faf5ff !important;
+                    padding: 10px !important;
+                    border-radius: 6px !important;
+                    margin-top: 8px !important;
                 }
                 
                 .analysis-paragraph {

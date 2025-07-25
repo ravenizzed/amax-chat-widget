@@ -747,39 +747,39 @@
                 }
                 
                 .analysis-section {
-                    margin: 12px 0 !important;
-                    padding: 16px !important;
-                    border-radius: 12px !important;
+                    margin: 8px 0 !important;
+                    padding: 10px 12px !important;
+                    border-radius: 8px !important;
                     border: 1px solid !important;
                     transition: all 0.2s !important;
                 }
                 
                 .analysis-section:hover {
                     transform: translateY(-1px) !important;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
                 }
                 
                 .section-header {
                     display: flex !important;
                     align-items: center !important;
-                    gap: 8px !important;
-                    margin-bottom: 8px !important;
+                    gap: 6px !important;
+                    margin-bottom: 6px !important;
                 }
                 
                 .section-icon {
-                    font-size: 18px !important;
+                    font-size: 14px !important;
                 }
                 
                 .section-title {
-                    font-size: 12px !important;
-                    font-weight: 700 !important;
+                    font-size: 10px !important;
+                    font-weight: 600 !important;
                     text-transform: uppercase !important;
-                    letter-spacing: 0.8px !important;
+                    letter-spacing: 0.5px !important;
                 }
                 
                 .section-content {
-                    font-size: 14px !important;
-                    line-height: 1.6 !important;
+                    font-size: 13px !important;
+                    line-height: 1.4 !important;
                     color: #374151 !important;
                 }
 
@@ -787,7 +787,7 @@
                 .direct-answer {
                     background: #f0f9ff !important;
                     border-color: #0ea5e9 !important;
-                    border-left: 4px solid #0ea5e9 !important;
+                    border-left: 3px solid #0ea5e9 !important;
                 }
 
                 .direct-answer .section-title {
@@ -795,24 +795,24 @@
                 }
 
                 .answer-content {
-                    font-size: 16px !important;
-                    font-weight: 600 !important;
+                    font-size: 14px !important;
+                    font-weight: 500 !important;
                     color: #0c4a6e !important;
                     background: #e0f2fe !important;
-                    padding: 12px !important;
-                    border-radius: 8px !important;
-                    margin-top: 8px !important;
+                    padding: 8px 10px !important;
+                    border-radius: 6px !important;
+                    margin-top: 4px !important;
                 }
 
                 /* Key Insights Section */
                 .key-insights {
                     background: #fef3c7 !important;
                     border-color: #f59e0b !important;
-                    border-left: 4px solid #f59e0b !important;
+                    border-left: 3px solid #eab308 !important;
                 }
 
                 .key-insights .section-title {
-                    color: #92400e !important;
+                    color: #a16207 !important;
                 }
 
                 .insights-content {
@@ -820,18 +820,18 @@
                 }
 
                 .insight-bullet {
-                    margin: 6px 0 !important;
-                    padding-left: 8px !important;
-                    font-size: 14px !important;
-                    line-height: 1.5 !important;
+                    margin: 3px 0 !important;
+                    padding-left: 4px !important;
+                    font-size: 13px !important;
+                    line-height: 1.4 !important;
                     color: #374151 !important;
                 }
 
                 /* Finch's Opinion Section */
                 .finch-opinion {
-                    background: #f3e8ff !important;
+                    background: #faf5ff !important;
                     border-color: #a855f7 !important;
-                    border-left: 4px solid #a855f7 !important;
+                    border-left: 3px solid #a855f7 !important;
                 }
 
                 .finch-opinion .section-title {
@@ -840,19 +840,19 @@
 
                 .opinion-content {
                     font-style: italic !important;
-                    font-size: 14px !important;
-                    line-height: 1.6 !important;
+                    font-size: 13px !important;
+                    line-height: 1.4 !important;
                     color: #374151 !important;
-                    background: #faf5ff !important;
-                    padding: 10px !important;
-                    border-radius: 6px !important;
-                    margin-top: 8px !important;
+                    background: #f3e8ff !important;
+                    padding: 6px 8px !important;
+                    border-radius: 4px !important;
+                    margin-top: 4px !important;
                 }
                 
                 .analysis-paragraph {
-                    margin: 12px 0 !important;
-                    font-size: 14px !important;
-                    line-height: 1.6 !important;
+                    margin: 6px 0 !important;
+                    font-size: 13px !important;
+                    line-height: 1.4 !important;
                     color: #374151 !important;
                 }
                 

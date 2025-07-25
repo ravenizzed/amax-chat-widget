@@ -1017,20 +1017,20 @@
                     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12) !important;
                 }
                 .chart-title {
-                    font-weight: 600 !important;
-                    margin-bottom: 16px !important;
+                    font-weight: 500 !important;
+                    margin-bottom: 10px !important;
                     color: #1f4e79 !important;
-                    font-size: 16px !important;
+                    font-size: 14px !important;
                     text-align: center !important;
-                    border-bottom: 2px solid #f8f9fa !important;
-                    padding-bottom: 8px !important;
+                    border-bottom: 1px solid #f1f5f9 !important;
+                    padding-bottom: 6px !important;
                 }
                 .vega-chart {
                     display: flex !important;
                     justify-content: center !important;
                     align-items: center !important;
-                    min-height: 300px !important;
-                    border-radius: 8px !important;
+                    min-height: 250px !important;
+                    border-radius: 6px !important;
                     background: #fafbfc !important;
                 }
                 .vega-chart canvas, .vega-chart svg {
